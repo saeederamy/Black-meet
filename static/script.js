@@ -30,10 +30,17 @@ const SVGs = {
 document.getElementById('btn-mic').innerHTML = SVGs.micOn;
 document.getElementById('btn-cam').innerHTML = SVGs.camOn;
 
-// حل باگ چرخ‌دنده در لابی
+// استفاده از closest برای حل مشکل بسته‌شدن آنی چرخ‌دنده
 document.addEventListener('click', (e) => {
-    if (!e.target.matches('.three-dots-btn') && !e.target.matches('.r-menu-btn')) {
+    if (!e.target.closest('.three-dots-btn') && !e.target.closest('.r-menu-btn')) {
         document.querySelectorAll('.dropdown-menu, .r-dropdown').forEach(m => m.classList.remove('show'));
+    }
+});
+
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+        document.querySelectorAll('.video-container').forEach(c => c.classList.remove('fullscreen'));
+        document.getElementById('local-container').classList.remove('pip');
     }
 });
 
@@ -285,6 +292,13 @@ function refreshUserList() {
     }
 }
 
+function toggleMenu(menuId) {
+    const menu = document.getElementById(menuId);
+    const isShowing = menu.classList.contains('show');
+    document.querySelectorAll('.dropdown-menu, .r-dropdown').forEach(m => m.classList.remove('show'));
+    if (!isShowing) menu.classList.add('show');
+}
+
 function filterView(type, btnObj) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btnObj.classList.add('active');
@@ -312,11 +326,19 @@ function makeFullscreen(containerId) {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().then(() => {
             container.classList.add('fullscreen');
-            if (container.id !== 'local-container' && !isVideoMuted) document.getElementById('local-container').classList.add('pip');
+            if (container.id !== 'local-container' && !isVideoMuted) {
+                document.getElementById('local-container').classList.add('pip');
+            }
         }).catch(err => console.log(err));
     } else {
         document.exitFullscreen();
     }
+}
+
+function setupDoubleClickHandler(containerElement) {
+    containerElement.ondblclick = () => {
+        makeFullscreen(containerElement.id);
+    };
 }
 
 async function initMedia() {
@@ -326,7 +348,7 @@ async function initMedia() {
         localStream.getAudioTracks().forEach(t => t.enabled = !isAudioMuted);
         localStream.getVideoTracks().forEach(t => t.enabled = !isVideoMuted);
         attachVolumeMeter(localStream, 'mic-local'); 
-    } catch(e) { console.error("Camera error."); }
+    } catch(e) { console.error("Camera access denied."); }
 }
 
 function connectWebSocket() {
@@ -386,6 +408,9 @@ function connectWebSocket() {
                 if (myRole !== 'admin') {
                     isMeetingActive = false;
                     document.getElementById('meeting-overlay').style.display = 'flex';
+                    document.getElementById('main-workspace').style.display = 'none';
+                    document.getElementById('view-tabs').style.display = 'none';
+                    document.querySelector('.bottom-bar').style.display = 'none';
                     stopAllMediaAndConnections();
                 }
                 break;
@@ -393,6 +418,9 @@ function connectWebSocket() {
                 if (myRole !== 'admin') {
                     isMeetingActive = true;
                     document.getElementById('meeting-overlay').style.display = 'none';
+                    document.getElementById('main-workspace').style.display = 'flex';
+                    document.getElementById('view-tabs').style.display = 'flex';
+                    document.querySelector('.bottom-bar').style.display = 'flex';
                     initMedia().then(() => {
                         ws.send(JSON.stringify({ type: 'user-joined', client_id: clientId, role: myRole }));
                     });
