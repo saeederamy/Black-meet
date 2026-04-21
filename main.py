@@ -100,22 +100,17 @@ def restart_server():
 @app.post("/api/system/update")
 async def system_update(request: Request, bg_tasks: BackgroundTasks):
     try:
-        # دریافت تغییرات جدید از گیت‌هاب
         subprocess.run(["git", "fetch", "--all"], cwd=BASE_DIR, check=True)
         status = subprocess.run(["git", "status", "-uno"], cwd=BASE_DIR, capture_output=True, text=True)
         
         if "Your branch is up to date" in status.stdout:
             return {"success": True, "updated": False, "message": "System is already up-to-date! No changes found."}
         
-        # جایگزینی اجباری فایل‌ها
         subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=BASE_DIR, check=True)
-        
-        # آپدیت پکیج‌های پایتون (اگر نصب دستی انجام شده)
         pip_path = os.path.join(BASE_DIR, "venv", "bin", "pip")
         if os.path.exists(pip_path):
             subprocess.run([pip_path, "install", "-r", "requirements.txt"], cwd=BASE_DIR)
         
-        # ری‌استارت سرویس در بک‌گراند
         bg_tasks.add_task(restart_server)
         return {"success": True, "updated": True, "message": "Update successfully applied! System is restarting..."}
     except Exception as e:
