@@ -3,178 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Meet - Black Hub Edition</title>
+    <title>Black Meet - Ultimate</title>
     <style>
         :root {
-            --bh-black: #030303;
-            --bh-dark: #0a0a0c;
-            --bh-glass: rgba(255, 255, 255, 0.03);
-            --bh-border: rgba(255, 255, 255, 0.08);
-            --bh-orange: #ff5e00;
-            --bh-orange-glow: rgba(255, 94, 0, 0.4);
-            --bh-blue: #00e5ff;
-            --bh-red: #ff003c;
-            --text-main: #ffffff;
-            --text-muted: #888888;
+            --c-black: #050505;
+            --c-dark: #0a0a0c;
+            --c-white: #ffffff;
+            --c-blue: #3b82f6;
+            --c-red: #ef4444;
+            --c-orange: #f97316;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-muted: #9ca3af;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
 
         body {
-            background-color: var(--bh-black); color: var(--text-main);
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(255, 94, 0, 0.08), transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.05), transparent 40%);
+            background-color: var(--c-black); color: var(--c-white);
+            background-image: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08), transparent 40%);
             height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         .glass-panel {
-            background: var(--bh-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            border: 1px solid var(--bh-border); border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.05);
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 20px;
         }
 
         /* --- Login Screen --- */
         #login-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;}
-        #login-screen { width: 100%; max-width: 400px; padding: 45px 35px; text-align: center; display: flex; flex-direction: column; gap: 20px; }
-        #login-screen h2 { font-size: 32px; letter-spacing: 3px; font-weight: 800; text-transform: uppercase; }
-        #login-screen h2 span { color: var(--bh-orange); text-shadow: 0 0 20px var(--bh-orange-glow);}
+        #login-screen { width: 100%; max-width: 400px; padding: 45px 35px; text-align: center; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        #login-screen h2 { font-size: 32px; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
+        #login-screen h2 span { color: var(--c-blue); text-shadow: 0 0 15px rgba(59,130,246,0.4);}
         
         input {
-            width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--bh-border); border-radius: 12px;
+            width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border); border-radius: 12px;
             color: white; font-size: 15px; outline: none; transition: 0.3s;
         }
-        input:focus { border-color: var(--bh-orange); background: rgba(0,0,0,0.8); }
+        input:focus { border-color: var(--c-blue); background: rgba(0,0,0,0.9); box-shadow: 0 0 15px rgba(59,130,246,0.2);}
         
         .btn-primary {
-            background: linear-gradient(135deg, var(--bh-orange), #ff2a00);
-            color: #fff; border: none; padding: 16px; border-radius: 12px;
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;
+            background: var(--c-white); color: var(--c-black); border: none; padding: 16px; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
-        .btn-primary:hover { box-shadow: 0 0 25px var(--bh-orange-glow); transform: translateY(-2px);}
+        .btn-primary:hover { background: var(--c-blue); color: var(--c-white); box-shadow: 0 0 20px rgba(59,130,246,0.4); transform: translateY(-2px);}
+
+        /* --- Overlay (Waiting Room) --- */
+        #meeting-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+            background: rgba(5,5,5,0.95); backdrop-filter: blur(10px);
+            z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #meeting-overlay h1 { color: var(--c-white); font-size: 28px; margin-bottom: 10px;}
+        #meeting-overlay p { color: var(--text-muted); font-size: 16px;}
 
         /* --- Meet Screen --- */
-        #meet-screen { display: none; flex-direction: column; height: 100%; width: 100%; }
-        #waiting-room { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; font-size: 22px; color: var(--text-muted); text-align: center; padding: 20px;}
+        #meet-screen { display: none; flex-direction: column; height: 100%; width: 100%; position: relative;}
         
-        /* --- Top Tabs (Black Hub Style) --- */
+        /* --- Top Tabs --- */
         .top-tabs {
             display: flex; gap: 15px; padding: 15px 25px; background: rgba(0,0,0,0.4);
-            border-bottom: 1px solid var(--bh-border); align-items: center; z-index: 10;
+            border-bottom: 1px solid var(--glass-border); align-items: center; z-index: 10;
         }
         .tab-btn {
             background: transparent; border: 1px solid transparent; color: var(--text-muted);
             padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px;
         }
-        .tab-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
-        .tab-btn.active { background: var(--bh-glass); border-color: var(--bh-border); color: var(--bh-orange); box-shadow: 0 0 15px rgba(255,94,0,0.1);}
+        .tab-btn:hover { color: var(--c-white); background: rgba(255,255,255,0.05); }
+        .tab-btn.active { background: var(--glass-bg); border-color: var(--glass-border); color: var(--c-white); box-shadow: 0 0 15px rgba(255,255,255,0.1);}
 
         .workspace { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; position: relative;}
 
-        /* گرید بهینه شده برای اسکرول (6+ کاربر) */
         #video-grid {
             flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px; align-content: start; overflow-y: auto; padding-right: 10px;
-            scroll-behavior: smooth;
+            gap: 20px; align-content: start; overflow-y: auto; padding-right: 10px; scroll-behavior: smooth;
         }
 
-        /* کپسول‌های ویدیویی داینامیک */
         .video-container {
-            position: relative; background: var(--bh-dark); border-radius: 24px;
-            overflow: visible; aspect-ratio: 16 / 9; border: 1px solid var(--bh-border);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative; background: var(--c-dark); border-radius: 24px;
+            overflow: visible; aspect-ratio: 16 / 9; border: 1px solid var(--glass-border);
+            transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .video-container:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); z-index: 5;}
+        .video-container:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); z-index: 5;}
         
         video { width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 24px; transition: opacity 0.3s;}
         
         .label {
-            position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
             padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1); color: var(--c-white); pointer-events: none;
         }
+        .label.screen-lbl { border-color: var(--c-orange); color: var(--c-orange); }
 
-        /* --- Camera Off Bubble --- */
+        /* Camera Off Bubble */
         .avatar-bubble {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; align-items: center; justify-content: center; flex-direction: column;
-            background: radial-gradient(circle, #1a1a1a 0%, #000 80%); border-radius: 24px;
+            background: #111; border-radius: 24px;
         }
         .avatar-circle {
-            width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #333, #111);
-            border: 2px solid var(--bh-border); display: flex; align-items: center; justify-content: center;
-            font-size: 28px; font-weight: bold; color: var(--text-main); margin-bottom: 15px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 80px; height: 80px; border-radius: 50%; background: var(--c-dark);
+            border: 2px solid var(--glass-border); display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: bold; color: var(--c-white); margin-bottom: 15px;
         }
         .avatar-name { font-size: 16px; color: var(--text-muted); font-weight: 600;}
-        
         .cam-off video { opacity: 0; }
         .cam-off .avatar-bubble { display: flex; }
 
-        /* --- 3-Dot Menu (Black Hub Style) --- */
+        /* 3-Dot Menu */
         .menu-wrapper { position: absolute; top: 15px; right: 15px; z-index: 20;}
         .three-dots-btn {
-            background: rgba(0,0,0,0.6); border: 1px solid var(--bh-border); color: var(--text-main);
+            background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: var(--c-white);
             width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s; backdrop-filter: blur(4px); font-weight: bold;
+            cursor: pointer; transition: 0.3s; font-weight: bold;
         }
-        .three-dots-btn:hover { background: var(--bh-orange); border-color: var(--bh-orange); color: #000;}
+        .three-dots-btn:hover { background: var(--c-white); color: var(--c-black);}
         
         .dropdown-menu {
             position: absolute; top: 45px; right: 0; background: rgba(15,15,18,0.95); backdrop-filter: blur(16px);
-            border: 1px solid var(--bh-border); border-radius: 12px; padding: 8px; min-width: 140px;
+            border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px; min-width: 140px;
             display: none; flex-direction: column; gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.9);
             transform-origin: top right; transform: scale(0.9); opacity: 0; transition: 0.2s;
         }
         .dropdown-menu.show { display: flex; transform: scale(1); opacity: 1; }
         .dropdown-item {
-            background: transparent; border: none; color: var(--text-main); padding: 8px 12px;
+            background: transparent; border: none; color: var(--c-white); padding: 8px 12px;
             text-align: left; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s;
         }
-        .dropdown-item:hover { background: rgba(255,255,255,0.1); color: var(--bh-orange);}
-        .dropdown-item.danger:hover { background: rgba(255,0,0,0.2); color: var(--bh-red);}
+        .dropdown-item:hover { background: rgba(255,255,255,0.1); color: var(--c-blue);}
+        .dropdown-item.danger:hover { background: rgba(255,0,0,0.2); color: var(--c-red);}
 
-        /* پین و PiP */
-        .video-container.pinned { grid-column: 1 / -1; height: 65vh; border-color: var(--bh-orange); box-shadow: 0 0 30px var(--bh-orange-glow);}
+        /* Pin & PiP */
+        .video-container.pinned { grid-column: 1 / -1; height: 65vh; border-color: var(--c-blue); box-shadow: 0 0 30px rgba(59,130,246,0.2);}
         .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 100; border-radius: 0; border: none; }
         .video-container.pip {
             position: fixed; bottom: 110px; right: 25px; width: 220px; height: auto; aspect-ratio: 16/9;
-            z-index: 1001; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 2px solid var(--bh-orange);
+            z-index: 1001; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 2px solid var(--c-blue);
         }
 
         /* --- Sidebar Chat --- */
-        .sidebar { width: 340px; display: none; flex-direction: column; background: rgba(5,5,5,0.6);}
-        .sidebar.show { display: flex; }
-        .chat-header { font-weight: bold; padding: 20px; border-bottom: 1px solid var(--bh-border); display: flex; justify-content: space-between; align-items: center;}
+        .sidebar { width: 340px; display: none; flex-direction: column; background: rgba(5,5,5,0.8);}
+        .sidebar.show { display: flex; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        
+        .chat-header { font-weight: bold; padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;}
         .close-chat { background: none; border: none; cursor: pointer; font-size: 26px; color: var(--text-muted); transition: 0.2s;}
-        .close-chat:hover { color: var(--bh-orange); }
+        .close-chat:hover { color: var(--c-white); }
         #chat-messages { flex: 1; overflow-y: auto; font-size: 14px; padding: 15px;}
-        .chat-msg { margin-bottom: 15px; line-height: 1.5; color: #ddd; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; border-left: 2px solid var(--bh-border);}
-        .chat-msg.me { border-left: none; border-right: 2px solid var(--bh-orange); text-align: right; background: rgba(255,94,0,0.05);}
-        .chat-msg b { color: var(--bh-blue); display: block; margin-bottom: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;}
-        .chat-msg.me b { color: var(--bh-orange); }
-        .chat-input { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--bh-border); background: rgba(0,0,0,0.5);}
-        .chat-input input { flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--bh-border); background: rgba(255,255,255,0.05); color: var(--text-main); outline:none;}
-        .chat-input input:focus { border-color: var(--bh-orange); }
-        .chat-input button { background: var(--bh-orange); color: #000; border: none; border-radius: 10px; padding: 0 18px; font-weight: bold; cursor: pointer;}
+        .chat-msg { margin-bottom: 15px; line-height: 1.5; color: #ddd; background: rgba(255,255,255,0.05); padding: 12px 15px; border-radius: 12px; border-left: 3px solid var(--glass-border);}
+        .chat-msg.me { border-left: none; border-right: 3px solid var(--c-blue); text-align: right; background: rgba(59,130,246,0.1);}
+        .chat-msg b { color: var(--c-white); display: block; margin-bottom: 5px; font-size: 12px;}
+        .chat-msg.me b { color: var(--c-blue); }
+        .chat-input { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.5);}
+        .chat-input input { flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--c-white); outline:none;}
+        .chat-input input:focus { border-color: var(--c-blue); }
+        .chat-input button { background: var(--c-white); color: var(--c-black); border: none; border-radius: 10px; padding: 0 18px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .chat-input button:hover { background: var(--c-blue); color: var(--c-white); }
 
         /* --- Bottom Bar --- */
         .bottom-bar {
             height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-            gap: 15px; background: rgba(3, 3, 3, 0.9); border-top: 1px solid var(--bh-border); position: relative; z-index: 150;
+            gap: 15px; background: rgba(3, 3, 3, 0.95); border-top: 1px solid var(--glass-border); position: relative; z-index: 150;
         }
 
         .ctrl-btn {
-            background: var(--bh-glass); border: 1px solid var(--bh-border);
-            color: var(--text-main); width: 54px; height: 54px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            color: var(--c-white); width: 54px; height: 54px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s;
         }
         .ctrl-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.08); }
         .ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; }
-        .ctrl-btn.active-orange { background: var(--bh-orange); border-color: var(--bh-orange); color: #000; box-shadow: 0 0 20px var(--bh-orange-glow);}
-        .ctrl-btn.active-red { background: var(--bh-red); border-color: var(--bh-red); color: #fff; box-shadow: 0 0 20px rgba(255,0,60,0.4);}
+        
+        /* دکمه‌های فعال/روشن */
+        .ctrl-btn.active-blue { background: var(--c-blue); border-color: var(--c-blue); color: #fff; box-shadow: 0 0 15px rgba(59,130,246,0.4);}
+        .ctrl-btn.active-orange { background: var(--c-orange); border-color: var(--c-orange); color: #fff; box-shadow: 0 0 15px rgba(249,115,22,0.4);}
+        .ctrl-btn.active-red { background: var(--c-red); border-color: var(--c-red); color: #fff; box-shadow: 0 0 15px rgba(239,68,68,0.4);}
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
@@ -185,7 +189,7 @@
             #video-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;}
             .top-tabs { padding: 10px; justify-content: center; overflow-x: auto;}
             .tab-btn { padding: 6px 12px; font-size: 12px;}
-            .sidebar { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 200; border-radius: 0; background: var(--bh-black); }
+            .sidebar { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 200; border-radius: 0; background: var(--c-black); }
             .video-container.pip { width: 120px; bottom: 100px; right: 10px; border-radius: 12px;}
             .video-container.pinned { height: 40vh; }
         }
@@ -195,21 +199,21 @@
 
     <div id="login-wrapper">
         <div id="login-screen" class="glass-panel">
-            <h2>Black <span>Hub</span></h2>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 5px;">High-Performance Meeting</p>
+            <h2>Black <span>Meet</span></h2>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 5px;">Secure Video Conferencing</p>
             <input type="text" id="username" placeholder="Enter your name" autocomplete="off" autocapitalize="words">
-            <input type="password" id="password" placeholder="Access Key">
-            <button class="btn-primary" onclick="login()">Initialize Sequence</button>
+            <input type="password" id="password" placeholder="Room Password">
+            <button class="btn-primary" onclick="login()">Connect</button>
         </div>
     </div>
 
-    <div id="meet-screen">
-        <div id="waiting-room">
-            <p style="color: var(--text-main); font-weight: bold;">Connection Suspended</p>
-            <p style="font-size: 15px; margin-top: 10px;">Awaiting administrator authorization...</p>
-        </div>
+    <div id="meeting-overlay">
+        <h1>Meeting Paused</h1>
+        <p>The host has temporarily paused the session. Please wait...</p>
+    </div>
 
-        <div class="top-tabs" id="view-tabs" style="display: none;">
+    <div id="meet-screen">
+        <div class="top-tabs" id="view-tabs">
             <button class="tab-btn active" onclick="filterView('all', this)">All Feeds</button>
             <button class="tab-btn" onclick="filterView('camera', this)">Cameras Only</button>
             <button class="tab-btn" onclick="filterView('screen', this)">Screens Only</button>
@@ -219,19 +223,16 @@
             <div id="video-grid">
                 
                 <div class="video-container" id="local-container" data-type="camera" title="Double click to expand">
-                    
                     <div class="avatar-bubble">
                         <div class="avatar-circle" id="local-avatar">U</div>
                         <div class="avatar-name">Camera Off</div>
                     </div>
-
                     <div class="menu-wrapper">
                         <button class="three-dots-btn" onclick="toggleMenu('local-menu')">⋮</button>
                         <div class="dropdown-menu" id="local-menu">
                             <button class="dropdown-item" onclick="togglePin('local-container'); toggleMenu('local-menu')">📌 Pin Video</button>
                         </div>
                     </div>
-
                     <video id="local-video" autoplay muted playsinline></video>
                     <div class="label">You (<span id="role-display"></span>)</div>
                 </div>
@@ -240,29 +241,29 @@
 
             <div class="sidebar glass-panel" id="chat-sidebar">
                 <div class="chat-header">
-                    Terminal Chat
+                    Live Chat
                     <button class="close-chat" onclick="toggleChat()">×</button>
                 </div>
                 <div id="chat-messages"></div>
                 <div class="chat-input">
-                    <input type="text" id="chat-input" placeholder="Enter command/message...">
-                    <button onclick="sendChat()">Execute</button>
+                    <input type="text" id="chat-input" placeholder="Type a message...">
+                    <button onclick="sendChat()">Send</button>
                 </div>
             </div>
         </div>
         
         <div class="bottom-bar">
-            <button class="ctrl-btn active-orange" id="btn-mic" onclick="toggleAudio()" title="Toggle Mic"></button>
-            <button class="ctrl-btn active-orange" id="btn-cam" onclick="toggleVideo()" title="Toggle Camera"></button>
-            <button class="ctrl-btn" onclick="toggleScreenShare()" title="Deploy Screen" id="btn-share">
+            <button class="ctrl-btn active-blue" id="btn-mic" onclick="toggleAudio()" title="Toggle Mic"></button>
+            <button class="ctrl-btn active-blue" id="btn-cam" onclick="toggleVideo()" title="Toggle Camera"></button>
+            <button class="ctrl-btn" onclick="toggleScreenShare()" title="Share Screen" id="btn-share">
                 <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h3v3h8v-3h3l-7-7-7 7z"/></svg>
             </button>
-            <button class="ctrl-btn" onclick="toggleChat()" title="Open Terminal">
+            <button class="ctrl-btn" onclick="toggleChat()" title="Open Chat">
                 <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
             </button>
             
-            <span id="admin-controls" style="display: none; border-left: 1px solid var(--bh-border); padding-left: 15px; margin-left: 5px;">
-                <button class="ctrl-btn active-red" id="btn-meeting-state" onclick="toggleMeetingState()" title="Terminate Connection" style="width: 80px; border-radius: 25px;">
+            <span id="admin-controls" style="display: none; border-left: 1px solid var(--glass-border); padding-left: 15px; margin-left: 5px;">
+                <button class="ctrl-btn active-red" id="btn-meeting-state" onclick="toggleMeetingState()" title="End Meeting" style="width: 80px; border-radius: 25px;">
                 </button>
             </span>
         </div>
