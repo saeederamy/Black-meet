@@ -3,149 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Meet - Orange Pro</title>
+    <title>Black Meet - Black & Orange</title>
     <style>
         :root {
-            --bg-dark: #050505;
+            --c-black: #080808;
+            --c-white: #ffffff;
+            --c-orange: #f97316;
             --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --orange-theme: #f97316; /* رنگ نارنجی جذاب */
-            --orange-glow: rgba(249, 115, 22, 0.3);
-            --text-light: #ffffff;
-            --btn-blue: #3b82f6;
-            --btn-red: #ef4444;
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
 
         body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.05), transparent 40%);
-            color: var(--text-light);
-            height: 100vh; height: 100dvh; 
-            display: flex; flex-direction: column; overflow: hidden;
+            background-color: var(--c-black); color: var(--c-white);
+            height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border); border-radius: 20px;
+            background: var(--glass-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 16px;
         }
 
         /* --- Login Screen --- */
         #login-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
         #login-screen { width: 100%; max-width: 400px; padding: 40px; text-align: center; display: flex; flex-direction: column; gap: 20px; }
-        #login-screen h2 { font-size: 28px; color: var(--orange-theme); letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 15px var(--orange-glow); }
+        #login-screen h2 { font-size: 28px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-white); }
+        #login-screen h2 span { color: var(--c-orange); }
         
         input {
-            width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.6);
-            border: 1px solid var(--glass-border); border-radius: 12px;
-            color: white; font-size: 16px; outline: none; transition: 0.3s;
+            width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--glass-border); border-radius: 8px;
+            color: var(--c-white); font-size: 16px; outline: none; transition: 0.3s;
         }
-        input:focus { border-color: var(--orange-theme); box-shadow: 0 0 10px var(--orange-glow); }
+        input:focus { border-color: var(--c-white); }
         
         .btn-primary {
-            background: var(--orange-theme); color: #000; border: none; padding: 15px;
-            border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            background: var(--c-white); color: var(--c-black); border: none; padding: 15px;
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
-        .btn-primary:hover { background: #ea580c; box-shadow: 0 0 15px var(--orange-glow); color: white;}
+        .btn-primary:hover { background: var(--c-orange); color: var(--c-white); }
 
         /* --- Meet Screen & Workspace --- */
         #meet-screen { display: none; flex-direction: column; height: 100%; width: 100%; }
-        #waiting-room { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; font-size: 22px; color: #bbb; text-align: center; padding: 20px;}
+        #waiting-room { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; font-size: 22px; color: #888; text-align: center; padding: 20px;}
         
-        .workspace { flex: 1; display: flex; padding: 25px; gap: 20px; overflow: hidden; position: relative;}
+        .workspace { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; position: relative;}
 
-        /* گرید ویدیوها با سایز بزرگتر */
+        /* کپسول‌های ویدیو */
         #video-grid {
-            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 20px; align-content: center; overflow-y: auto; padding-right: 5px;
         }
 
-        /* تم کپسولی نارنجی برای ویدیوها */
         .video-container {
-            position: relative; background: rgba(0,0,0,0.8);
-            border-radius: 35px; /* گوشه‌های کاملاً گرد (کپسول) */
-            overflow: hidden; aspect-ratio: 16 / 9; 
-            border: 2px solid var(--orange-theme);
-            box-shadow: 0 8px 25px var(--orange-glow); transition: all 0.3s ease;
+            position: relative; background: #000; border-radius: 24px;
+            overflow: hidden; aspect-ratio: 16 / 9; border: 1px solid var(--glass-border);
+            transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.8);
         }
 
+        /* رفع باگ کراپ شدن اسکرین شیر */
         video { width: 100%; height: 100%; object-fit: contain; background: #000; }
         
         .label {
-            position: absolute; bottom: 15px; left: 20px; background: rgba(0,0,0,0.8);
-            padding: 6px 15px; border-radius: 20px; font-size: 14px; 
-            border: 1px solid var(--orange-theme); color: var(--orange-theme); font-weight: bold;
+            position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.8);
+            padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.2); color: var(--c-white);
         }
 
-        .admin-actions {
-            position: absolute; top: 15px; left: 20px; display: flex; gap: 8px;
-        }
+        .admin-actions { position: absolute; top: 15px; left: 15px; display: flex; gap: 5px; }
         .admin-actions button {
-            background: rgba(0,0,0,0.8); color: white; border: 1px solid var(--glass-border);
-            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight:bold; transition: 0.2s;
+            background: rgba(0,0,0,0.8); color: var(--c-white); border: 1px solid var(--glass-border);
+            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold;
         }
-        .admin-actions button:hover { background: var(--btn-red); border-color: var(--btn-red); }
+        .admin-actions button:hover { background: var(--c-orange); border-color: var(--c-orange); }
 
         .pin-btn {
-            position: absolute; top: 15px; right: 20px; background: rgba(0,0,0,0.8);
-            border: 1px solid var(--glass-border); color: white; width: 36px; height: 36px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: 0.2s;
+            position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.8);
+            border: 1px solid var(--glass-border); color: var(--c-white); width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;
         }
-        .pin-btn.active { background: var(--orange-theme); border-color: var(--orange-theme); color: #000; }
-        .pin-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        .pin-btn.active { background: var(--c-orange); border-color: var(--c-orange); color: var(--c-black); }
+        .pin-btn svg { width: 16px; height: 16px; fill: currentColor; }
 
-        /* استایل‌های پین و فول‌اسکرین */
-        .video-container.pinned { grid-column: 1 / -1; height: 65vh; border-radius: 20px;}
-        .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 100; border-radius: 0; border: none; }
+        /* استایل‌های پین و فول‌اسکرین با CSS */
+        .video-container.pinned { grid-column: 1 / -1; height: 70vh; }
+        .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 85px); z-index: 100; border-radius: 0; border: none; }
         
-        /* PiP */
+        /* پاپ‌آپ (PiP) برای وب‌کم خودمان */
         .video-container.pip {
-            position: fixed; bottom: 110px; right: 25px; width: 200px; height: auto;
-            aspect-ratio: 16/9; z-index: 1001; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.9); border: 2px solid var(--orange-theme);
+            position: fixed; bottom: 100px; right: 20px; width: 180px; height: auto;
+            aspect-ratio: 16/9; z-index: 1001; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9); border: 2px solid var(--c-orange);
         }
 
         /* --- Sidebar Chat --- */
-        .sidebar { width: 340px; display: none; flex-direction: column; }
+        .sidebar { width: 320px; display: none; flex-direction: column; background: #0a0a0a;}
         .sidebar.show { display: flex; }
-        .chat-header { font-weight: bold; padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;}
-        .close-chat { background: none; border: none; cursor: pointer; font-size: 26px; color: #fff;}
+        .chat-header { font-weight: bold; padding: 15px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;}
+        .close-chat { background: none; border: none; cursor: pointer; font-size: 24px; color: var(--c-white);}
         #chat-messages { flex: 1; overflow-y: auto; font-size: 14px; padding: 15px;}
-        .chat-msg { margin-bottom: 12px; line-height: 1.5; color: #ddd; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 12px; border-left: 3px solid var(--orange-theme);}
-        .chat-msg b { color: var(--orange-theme); display: block; margin-bottom: 5px; font-size: 13px;}
-        .chat-input { display: flex; gap: 10px; margin-top: 10px; padding: 15px; border-top: 1px solid var(--glass-border);}
-        .chat-input input { flex: 1; padding: 12px 15px; border-radius: 12px; border: none; background: rgba(255,255,255,0.1); color: white;}
-        .chat-input button { background: var(--orange-theme); color: #000; border: none; border-radius: 12px; padding: 0 18px; font-weight: bold; cursor: pointer;}
+        .chat-msg { margin-bottom: 12px; line-height: 1.5; color: #ccc; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
+        .chat-msg b { color: var(--c-white); display: block; margin-bottom: 4px; font-size: 12px;}
+        .chat-input { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--glass-border);}
+        .chat-input input { flex: 1; padding: 10px 15px; border-radius: 6px; border: none; background: rgba(255,255,255,0.1); color: var(--c-white);}
+        .chat-input button { background: var(--c-white); color: var(--c-black); border: none; border-radius: 6px; padding: 0 15px; font-weight: bold; cursor: pointer;}
+        .chat-input button:hover { background: var(--c-orange); color: var(--c-white);}
 
         /* --- Bottom Bar --- */
         .bottom-bar {
-            height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-            gap: 15px; background: rgba(0, 0, 0, 0.85);
-            border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); position: relative; z-index: 150;
+            height: 85px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            gap: 15px; background: #050505; border-top: 1px solid var(--glass-border); position: relative; z-index: 150;
         }
 
         .ctrl-btn {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; width: 55px; height: 55px; border-radius: 50%;
+            background: transparent; border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--c-white); width: 50px; height: 50px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s;
         }
-        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
-        .ctrl-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .ctrl-btn:hover { border-color: var(--c-white); background: rgba(255,255,255,0.1); }
+        .ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
-        .ctrl-btn.active-blue { background: var(--btn-blue); border-color: var(--btn-blue); }
-        .ctrl-btn.active-red { background: var(--btn-red); border-color: var(--btn-red); }
-        .ctrl-btn.active-orange { background: var(--orange-theme); border-color: var(--orange-theme); color: #000;}
+        /* دکمه‌های فعال/خاموش با رنگ نارنجی */
+        .ctrl-btn.active-orange { background: var(--c-orange); border-color: var(--c-orange); color: var(--c-white); }
 
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
 
         @media (max-width: 768px) {
             .workspace { padding: 10px; }
-            #video-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;}
-            .video-container { border-radius: 20px; }
-            .sidebar { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 200; border-radius: 0; background: rgba(5,5,5,0.98); }
-            .video-container.pip { width: 120px; bottom: 100px; right: 10px; border-radius: 15px;}
+            #video-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;}
+            .sidebar { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 85px); z-index: 200; border-radius: 0; background: var(--c-black); }
+            .video-container.pip { width: 130px; bottom: 95px; right: 10px; }
+            .video-container.pinned { height: 40vh; }
         }
     </style>
 </head>
@@ -153,18 +143,18 @@
 
     <div id="login-wrapper">
         <div id="login-screen" class="glass-panel">
-            <h2>Black Meet</h2>
-            <p style="color: #999; font-size: 14px; margin-bottom: 10px;">Premium Workspace</p>
+            <h2>Black <span>Meet</span></h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Secure Connection</p>
             <input type="text" id="username" placeholder="Your Name" autocomplete="off" autocapitalize="words">
             <input type="password" id="password" placeholder="Password">
-            <button class="btn-primary" onclick="login()">Connect Session</button>
+            <button class="btn-primary" onclick="login()">Enter Room</button>
         </div>
     </div>
 
     <div id="meet-screen">
         <div id="waiting-room">
-            <p>Session Paused by Admin</p>
-            <p style="font-size: 15px; margin-top: 10px; color: #888;">Please wait to be reconnected...</p>
+            <p style="color: var(--c-white);">Session Paused by Host</p>
+            <p style="font-size: 15px; margin-top: 10px;">Please wait...</p>
         </div>
 
         <div class="workspace" id="main-workspace">
@@ -180,7 +170,7 @@
 
             <div class="sidebar glass-panel" id="chat-sidebar">
                 <div class="chat-header">
-                    Live Chat
+                    Messages
                     <button class="close-chat" onclick="toggleChat()">×</button>
                 </div>
                 <div id="chat-messages"></div>
@@ -192,8 +182,8 @@
         </div>
         
         <div class="bottom-bar">
-            <button class="ctrl-btn active-orange" id="btn-mic" onclick="toggleAudio()" title="Microphone"></button>
-            <button class="ctrl-btn active-blue" id="btn-cam" onclick="toggleVideo()" title="Camera"></button>
+            <button class="ctrl-btn" id="btn-mic" onclick="toggleAudio()" title="Microphone"></button>
+            <button class="ctrl-btn" id="btn-cam" onclick="toggleVideo()" title="Camera"></button>
             <button class="ctrl-btn" onclick="toggleScreenShare()" title="Share Screen" id="btn-share">
                 <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h3v3h8v-3h3l-7-7-7 7z"/></svg>
             </button>
@@ -202,7 +192,7 @@
             </button>
             
             <span id="admin-controls" style="display: none; border-left: 1px solid var(--glass-border); padding-left: 15px; margin-left: 5px;">
-                <button class="ctrl-btn active-red" id="btn-meeting-state" onclick="toggleMeetingState()" title="End Meeting" style="width: 80px; border-radius: 30px;">
+                <button class="ctrl-btn active-orange" id="btn-meeting-state" onclick="toggleMeetingState()" title="End Meeting" style="width: 80px; border-radius: 25px;">
                 </button>
             </span>
         </div>
