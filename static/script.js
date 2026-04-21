@@ -12,7 +12,7 @@ let isVideoMuted = false;
 let isMeetingActive = true;
 let isScreenSharing = false;
 let myScreenStream = null;
-let screenSenderMap = {}; // مدیریت ارسال اسکرین شیر مجزا
+let screenSenderMap = {}; // کلید حل مشکل اسکرین شیر همزمان
 
 const SVGs = {
     micOn: '<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
@@ -67,7 +67,6 @@ async function login() {
 
 function toggleChat() { document.getElementById('chat-sidebar').classList.toggle('show'); }
 
-// پین کردن براساس آیدی کانتینر (برای پشتیبانی از چند کپسول برای یک نفر)
 function togglePin(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -95,7 +94,6 @@ function setupDoubleClickHandler(containerElement) {
         
         if (!isFS) {
             containerElement.classList.add('fullscreen');
-            // وقتی شخص دیگری فول‌اسکرین شد، ما پاپ‌آپ می‌شویم
             if (containerElement.id !== 'local-container' && !isVideoMuted) {
                 localCont.classList.add('pip');
             } else {
@@ -159,6 +157,7 @@ function connectWebSocket() {
                 }
                 break;
             case 'force-action':
+                // دریافت دستور ادمین برای بستن تصویر و صدا
                 if (message.action === 'mute-mic') toggleAudio(true);
                 if (message.action === 'mute-cam') toggleVideo(true);
                 break;
@@ -179,51 +178,58 @@ function toggleMeetingState() {
     if (isMeetingActive) {
         ws.send(JSON.stringify({ type: 'admin-action', action: 'pause-meeting' }));
         isMeetingActive = false;
+        
+        // پاکسازی کلاینت‌های بقیه روی صفحه ادمین به صورت زنده
+        for (let id in peerConnections) peerConnections[id].close();
+        peerConnections = {};
+        document.querySelectorAll('.remote-video').forEach(e => e.remove());
+        
         btn.innerHTML = SVGs.startCall;
-        btn.classList.replace('active-red', 'active-green');
+        btn.classList.remove('active-orange');
     } else {
         ws.send(JSON.stringify({ type: 'admin-action', action: 'resume-meeting' }));
         isMeetingActive = true;
         btn.innerHTML = SVGs.endCall;
-        btn.classList.replace('active-green', 'active-red');
+        btn.classList.add('active-orange');
     }
 }
 
-// اضافه شدن onnegotiationneeded برای پشتیبانی از ارسال همزمان چند استریم
+// ساخت کانکشن که با اضافه/کم شدن ترک‌ها (اسکرین شیر) به صورت اتوماتیک دوباره مذاکره (Renegotiate) می‌کند
 function createPeerConnection(peerId, isInitiator) {
     let pc = peerConnections[peerId];
     if (!pc) {
         pc = new RTCPeerConnection(configuration);
         peerConnections[peerId] = pc;
-    }
-    
-    if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    if (myScreenStream) myScreenStream.getTracks().forEach(track => screenSenderMap[peerId] = pc.addTrack(track, myScreenStream));
 
-    pc.onicecandidate = event => {
-        if (event.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', target: peerId, candidate: event.candidate, senderId: clientId }));
-    };
+        if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        if (myScreenStream) myScreenStream.getTracks().forEach(track => screenSenderMap[peerId] = pc.addTrack(track, myScreenStream));
 
-    // دریافت استریم‌های جدید (حل مشکل نمایش همزمان وب‌کم و اسکرین طرف مقابل)
-    pc.ontrack = event => {
-        if (event.streams && event.streams[0]) {
-            addRemoteVideo(peerId, event.streams[0]);
-        }
-    };
+        pc.onicecandidate = e => {
+            if (e.candidate) ws.send(JSON.stringify({ type: 'ice-candidate', target: peerId, candidate: e.candidate, senderId: clientId }));
+        };
 
-    pc.onnegotiationneeded = async () => {
-        try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'offer', target: peerId, offer: pc.localDescription, senderId: clientId, senderName: myUsername }));
-        } catch(e) {}
-    };
+        // هندل کردن اضافه شدن ویدیو وب‌کم و اسکرین شیر (ساخت دو کپسول مجزا برای هر استریم)
+        pc.ontrack = e => {
+            if (e.streams && e.streams.length > 0) {
+                const stream = e.streams[0];
+                addRemoteVideo(peerId, stream);
+                
+                stream.onremovetrack = () => {
+                    if (stream.getTracks().length === 0) {
+                        const container = document.getElementById(`container-${peerId}-${stream.id.replace(/[^a-zA-Z0-9]/g, '')}`);
+                        if (container) container.remove();
+                    }
+                };
+            }
+        };
 
-    if (isInitiator) {
-        pc.createOffer().then(offer => {
-            pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'offer', target: peerId, offer: offer, senderId: clientId, senderName: myUsername }));
-        });
+        pc.onnegotiationneeded = async () => {
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                ws.send(JSON.stringify({ type: 'offer', target: peerId, offer: pc.localDescription, senderId: clientId, senderName: myUsername }));
+            } catch(err) {}
+        };
     }
     return pc;
 }
@@ -232,22 +238,27 @@ async function handleOffer(message) {
     const peerId = message.senderId;
     if (message.senderName) peerNames[peerId] = message.senderName;
     
-    const pc = createPeerConnection(peerId, false);
-    await pc.setRemoteDescription(new RTCSessionDescription(message.offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    const pc = peerConnections[peerId] || createPeerConnection(peerId, false);
     
-    ws.send(JSON.stringify({ type: 'answer', target: peerId, answer: answer, senderId: clientId, senderName: myUsername }));
+    try {
+        await pc.setRemoteDescription(new RTCSessionDescription(message.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        ws.send(JSON.stringify({ type: 'answer', target: peerId, answer: pc.localDescription, senderId: clientId, senderName: myUsername }));
+    } catch(err) {}
 }
 
 async function handleAnswer(message) {
     const pc = peerConnections[message.senderId];
-    if (message.senderName) peerNames[message.senderId] = message.senderName;
-    
-    // بروزرسانی تمام لیبل‌های نام این شخص
-    document.querySelectorAll(`.name-${message.senderId}`).forEach(el => el.innerText = message.senderName);
-
-    if (pc) await pc.setRemoteDescription(new RTCSessionDescription(message.answer));
+    if (message.senderName) {
+        peerNames[message.senderId] = message.senderName;
+        document.querySelectorAll(`.name-${message.senderId}`).forEach(el => el.innerText = message.senderName);
+    }
+    if (pc) {
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(message.answer));
+        } catch(err) {}
+    }
 }
 
 async function handleIceCandidate(message) {
@@ -256,8 +267,9 @@ async function handleIceCandidate(message) {
 }
 
 function addRemoteVideo(peerId, stream) {
-    // استفاده از آیدی استریم برای ساخت کانتینر مجزا (برای تفکیک وب‌کم و اسکرین بقیه)
-    const containerId = `container-${peerId}-${stream.id}`;
+    // جلوگیری از تداخل آی‌دی استریم در کپسول‌ها
+    const safeStreamId = stream.id.replace(/[^a-zA-Z0-9]/g, '');
+    const containerId = `container-${peerId}-${safeStreamId}`;
     if (document.getElementById(containerId)) return;
     
     const container = document.createElement('div');
@@ -302,7 +314,6 @@ function removeUserVideo(peerId) {
         peerConnections[peerId].close();
         delete peerConnections[peerId];
     }
-    // حذف تمام کپسول‌های مربوط به این شخص (چه وب‌کم چه اسکرین)
     document.querySelectorAll(`[id^="container-${peerId}"]`).forEach(e => e.remove());
 }
 
@@ -313,10 +324,10 @@ function toggleAudio(forceMute = false) {
     
     const btn = document.getElementById('btn-mic');
     if (isAudioMuted) {
-        btn.classList.replace('active-orange', 'active-red');
+        btn.classList.add('active-orange');
         btn.innerHTML = SVGs.micOff;
     } else {
-        btn.classList.replace('active-red', 'active-orange');
+        btn.classList.remove('active-orange');
         btn.innerHTML = SVGs.micOn;
     }
 }
@@ -324,42 +335,41 @@ function toggleAudio(forceMute = false) {
 function toggleVideo(forceMute = false) {
     if (!localStream) return;
     isVideoMuted = forceMute ? true : !isVideoMuted;
+    
+    // وقتی ادمین دستور قطع میده یا کاربر دکمه رو میزنه، دوربین رو قطع می‌کنیم نه استریم رو
     localStream.getVideoTracks().forEach(t => t.enabled = !isVideoMuted);
     
     const btn = document.getElementById('btn-cam');
     if (isVideoMuted) {
-        btn.classList.replace('active-blue', 'active-red');
+        btn.classList.add('active-orange');
         btn.innerHTML = SVGs.camOff;
-        document.getElementById('local-container').classList.remove('pip');
+        document.getElementById('local-container').classList.remove('pip'); 
     } else {
-        btn.classList.replace('active-red', 'active-blue');
+        btn.classList.remove('active-orange');
         btn.innerHTML = SVGs.camOn;
     }
 }
 
-// حل مشکل دکمه خاموش/روشن اسکرین شیر و ارسال همزمان
 async function toggleScreenShare() {
     if (!isScreenSharing) {
         try {
-            myScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            // صدا را فالس می‌گذاریم تا مشکل اکو و دو استریم صوتی پیش نیاید
+            myScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
             const screenTrack = myScreenStream.getVideoTracks()[0];
             
-            // اضافه کردن استریم اسکرین به اتصالات موجود (بدون حذف وب‌کم)
+            // اضافه کردن ترک اسکرین شیر به تمام همتایان موجود بدون قطع شدن وب‌کم
             for (let id in peerConnections) {
                 const pc = peerConnections[id];
                 screenSenderMap[id] = pc.addTrack(screenTrack, myScreenStream);
             }
             
-            // نمایش کپسول اسکرین شیر برای خودمان
             addLocalScreenShare(myScreenStream);
-            
             isScreenSharing = true;
             document.getElementById('btn-share').classList.add('active-orange');
 
             screenTrack.onended = stopScreenShare;
         } catch (error) {}
     } else {
-        // اگر قبلاً روشن بود و دوباره دکمه را زدیم -> متوقف کن
         stopScreenShare();
     }
 }
@@ -370,7 +380,7 @@ function stopScreenShare() {
     if (myScreenStream) myScreenStream.getTracks().forEach(t => t.stop());
     
     for (let id in peerConnections) {
-        if (screenSenderMap[id]) {
+        if (screenSenderMap[id] && peerConnections[id]) {
             peerConnections[id].removeTrack(screenSenderMap[id]);
         }
     }
@@ -409,7 +419,7 @@ function addLocalScreenShare(stream) {
 
     setupDoubleClickHandler(container);
     document.getElementById('video-grid').appendChild(container);
-    togglePin('local-screen-container'); // اتوماتیک اسکرین خودمان را پین کن
+    togglePin('local-screen-container');
 }
 
 function sendChat() {
@@ -431,4 +441,12 @@ function appendChat(msg) {
     
     chatBox.innerHTML += `<div class="chat-msg"><b>${senderName}</b> ${msg.text}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
+    
+    if(!document.getElementById('chat-sidebar').classList.contains('show')) {
+        const chatBtn = document.querySelector('[title="Chat"]');
+        if(chatBtn) {
+            chatBtn.style.transform = "scale(1.2)";
+            setTimeout(() => chatBtn.style.transform = "scale(1)", 500);
+        }
+    }
 }
