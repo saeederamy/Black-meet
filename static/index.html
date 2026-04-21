@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Black Meet - Ultimate</title>
+    <title>Black Meet - Dynamic</title>
     <style>
         :root {
-            --c-black: #050505;
-            --c-dark: #0a0a0c;
-            --c-white: #ffffff;
-            --c-blue: #3b82f6;
-            --c-red: #ef4444;
-            --c-orange: #f97316;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --c-black: #050505; --c-dark: #0a0a0c; --c-white: #ffffff;
+            --c-blue: #3b82f6; --c-red: #ef4444; --c-orange: #f97316;
+            --glass-bg: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
             --text-muted: #9ca3af;
         }
 
@@ -26,8 +21,7 @@
         }
 
         .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 20px;
+            background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px;
         }
 
         /* --- Login Screen --- */
@@ -36,58 +30,54 @@
         #login-screen h2 { font-size: 32px; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
         #login-screen h2 span { color: var(--c-blue); text-shadow: 0 0 15px rgba(59,130,246,0.4);}
         
-        input {
-            width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.6);
-            border: 1px solid var(--glass-border); border-radius: 12px;
-            color: white; font-size: 15px; outline: none; transition: 0.3s;
-        }
+        input { width: 100%; padding: 16px; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 15px; outline: none; transition: 0.3s; }
         input:focus { border-color: var(--c-blue); background: rgba(0,0,0,0.9); box-shadow: 0 0 15px rgba(59,130,246,0.2);}
         
-        .btn-primary {
-            background: var(--c-white); color: var(--c-black); border: none; padding: 16px; border-radius: 12px;
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
-        }
+        .btn-primary { background: var(--c-white); color: var(--c-black); border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary:hover { background: var(--c-blue); color: var(--c-white); box-shadow: 0 0 20px rgba(59,130,246,0.4); transform: translateY(-2px);}
 
-        /* --- Overlay (Waiting Room) --- */
         #meeting-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: rgba(5,5,5,0.95); backdrop-filter: blur(10px);
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(5,5,5,0.95); backdrop-filter: blur(10px);
             z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center;
         }
         #meeting-overlay h1 { color: var(--c-white); font-size: 28px; margin-bottom: 10px;}
         #meeting-overlay p { color: var(--text-muted); font-size: 16px;}
 
-        /* --- Meet Screen --- */
         #meet-screen { display: none; flex-direction: column; height: 100%; width: 100%; position: relative;}
         
-        /* --- Top Tabs --- */
         .top-tabs {
-            display: flex; gap: 15px; padding: 15px 25px; background: rgba(0,0,0,0.4);
-            border-bottom: 1px solid var(--glass-border); align-items: center; z-index: 10;
+            display: flex; gap: 15px; padding: 15px 25px; background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--glass-border); align-items: center; z-index: 10;
         }
-        .tab-btn {
-            background: transparent; border: 1px solid transparent; color: var(--text-muted);
-            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px;
-        }
+        .tab-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px; }
         .tab-btn:hover { color: var(--c-white); background: rgba(255,255,255,0.05); }
         .tab-btn.active { background: var(--glass-bg); border-color: var(--glass-border); color: var(--c-white); box-shadow: 0 0 15px rgba(255,255,255,0.1);}
 
         .workspace { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; position: relative;}
 
+        /* --- Dynamic Grid System --- */
         #video-grid {
-            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px; align-content: start; overflow-y: auto; padding-right: 10px; scroll-behavior: smooth;
+            flex: 1; display: grid; gap: 15px; width: 100%; height: 100%;
+            transition: all 0.3s; padding-right: 5px; overflow-y: auto;
         }
+        
+        /* Layout classes dynamically added by JS */
+        #video-grid.grid-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        #video-grid.grid-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        #video-grid.grid-3, #video-grid.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        #video-grid.grid-5, #video-grid.grid-6 { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        #video-grid.grid-many { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); grid-auto-rows: minmax(200px, 1fr);}
 
         .video-container {
             position: relative; background: var(--c-dark); border-radius: 24px;
-            overflow: visible; aspect-ratio: 16 / 9; border: 1px solid var(--glass-border);
-            transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden; border: 1px solid var(--glass-border); width: 100%; height: 100%;
+            transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
         }
-        .video-container:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); z-index: 5;}
+        .video-container:hover { border-color: rgba(255,255,255,0.3); z-index: 5;}
         
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 24px; transition: opacity 0.3s;}
+        /* دوربین ها کاور میشن که کشیده بشن، اسکرین شیر ها کانتین میشن که کامل دیده بشن */
+        .video-container[data-type="camera"] video { object-fit: cover; }
+        .video-container[data-type="screen"] video { object-fit: contain; }
+        video { width: 100%; height: 100%; background: #000; transition: opacity 0.3s;}
         
         .label {
             position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
@@ -96,27 +86,22 @@
         }
         .label.screen-lbl { border-color: var(--c-orange); color: var(--c-orange); }
 
-        /* Camera Off Bubble */
         .avatar-bubble {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; align-items: center; justify-content: center; flex-direction: column;
-            background: #111; border-radius: 24px;
+            display: none; align-items: center; justify-content: center; flex-direction: column; background: #111;
         }
         .avatar-circle {
-            width: 80px; height: 80px; border-radius: 50%; background: var(--c-dark);
-            border: 2px solid var(--glass-border); display: flex; align-items: center; justify-content: center;
-            font-size: 28px; font-weight: bold; color: var(--c-white); margin-bottom: 15px;
+            width: 80px; height: 80px; border-radius: 50%; background: var(--c-dark); border: 2px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: var(--c-white); margin-bottom: 15px;
         }
         .avatar-name { font-size: 16px; color: var(--text-muted); font-weight: 600;}
         .cam-off video { opacity: 0; }
         .cam-off .avatar-bubble { display: flex; }
 
-        /* 3-Dot Menu */
         .menu-wrapper { position: absolute; top: 15px; right: 15px; z-index: 20;}
         .three-dots-btn {
             background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: var(--c-white);
-            width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s; font-weight: bold;
+            width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; font-weight: bold;
         }
         .three-dots-btn:hover { background: var(--c-white); color: var(--c-black);}
         
@@ -127,18 +112,17 @@
             transform-origin: top right; transform: scale(0.9); opacity: 0; transition: 0.2s;
         }
         .dropdown-menu.show { display: flex; transform: scale(1); opacity: 1; }
-        .dropdown-item {
-            background: transparent; border: none; color: var(--c-white); padding: 8px 12px;
-            text-align: left; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s;
-        }
+        .dropdown-item { background: transparent; border: none; color: var(--c-white); padding: 8px 12px; text-align: left; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; }
         .dropdown-item:hover { background: rgba(255,255,255,0.1); color: var(--c-blue);}
         .dropdown-item.danger:hover { background: rgba(255,0,0,0.2); color: var(--c-red);}
 
-        /* Pin & PiP */
-        .video-container.pinned { grid-column: 1 / -1; height: 65vh; border-color: var(--c-blue); box-shadow: 0 0 30px rgba(59,130,246,0.2);}
+        /* Pinned and PiP logic */
+        .video-container.pinned { grid-column: 1 / -1; grid-row: 1 / span 2; height: 65vh; border-color: var(--c-blue); box-shadow: 0 0 30px rgba(59,130,246,0.2);}
+        .video-container.pinned video { object-fit: contain; } /* پین همیشه باید کامل دیده بشه */
         .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 100; border-radius: 0; border: none; }
+        .video-container.fullscreen video { object-fit: contain; }
         .video-container.pip {
-            position: fixed; bottom: 110px; right: 25px; width: 220px; height: auto; aspect-ratio: 16/9;
+            position: fixed; bottom: 110px; right: 25px; width: 220px; height: 125px;
             z-index: 1001; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); border: 2px solid var(--c-blue);
         }
 
@@ -148,12 +132,19 @@
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
         
         .chat-header { font-weight: bold; padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;}
+        
+        /* دکمه‌های ادمین در هدر چت */
+        .admin-chat-tools { display: none; gap: 8px; margin-right: auto; margin-left: 15px; }
+        .admin-chat-tools button { background: rgba(255,255,255,0.1); border:none; color: white; border-radius: 6px; padding: 5px 8px; cursor: pointer; transition: 0.2s;}
+        .admin-chat-tools button:hover { background: var(--c-blue); }
+        .admin-chat-tools button.danger:hover { background: var(--c-red); }
+
         .close-chat { background: none; border: none; cursor: pointer; font-size: 26px; color: var(--text-muted); transition: 0.2s;}
         .close-chat:hover { color: var(--c-white); }
         #chat-messages { flex: 1; overflow-y: auto; font-size: 14px; padding: 15px;}
         .chat-msg { margin-bottom: 15px; line-height: 1.5; color: #ddd; background: rgba(255,255,255,0.05); padding: 12px 15px; border-radius: 12px; border-left: 3px solid var(--glass-border);}
         .chat-msg.me { border-left: none; border-right: 3px solid var(--c-blue); text-align: right; background: rgba(59,130,246,0.1);}
-        .chat-msg b { color: var(--c-white); display: block; margin-bottom: 5px; font-size: 12px;}
+        .chat-msg b { color: var(--text-muted); display: block; margin-bottom: 5px; font-size: 12px;}
         .chat-msg.me b { color: var(--c-blue); }
         .chat-input { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.5);}
         .chat-input input { flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--c-white); outline:none;}
@@ -175,22 +166,20 @@
         .ctrl-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.08); }
         .ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; }
         
-        /* دکمه‌های فعال/روشن */
         .ctrl-btn.active-blue { background: var(--c-blue); border-color: var(--c-blue); color: #fff; box-shadow: 0 0 15px rgba(59,130,246,0.4);}
         .ctrl-btn.active-orange { background: var(--c-orange); border-color: var(--c-orange); color: #fff; box-shadow: 0 0 15px rgba(249,115,22,0.4);}
         .ctrl-btn.active-red { background: var(--c-red); border-color: var(--c-red); color: #fff; box-shadow: 0 0 15px rgba(239,68,68,0.4);}
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-track { background: transparent; }
 
         @media (max-width: 768px) {
             .workspace { padding: 10px; }
-            #video-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;}
+            #video-grid.grid-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            #video-grid.grid-3, #video-grid.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;}
             .top-tabs { padding: 10px; justify-content: center; overflow-x: auto;}
-            .tab-btn { padding: 6px 12px; font-size: 12px;}
             .sidebar { position: fixed; top: 0; left: 0; width: 100vw; height: calc(100dvh - 90px); z-index: 200; border-radius: 0; background: var(--c-black); }
-            .video-container.pip { width: 120px; bottom: 100px; right: 10px; border-radius: 12px;}
+            .video-container.pip { width: 100px; height: 130px; bottom: 100px; right: 10px; border-radius: 12px;}
             .video-container.pinned { height: 40vh; }
         }
     </style>
@@ -220,7 +209,7 @@
         </div>
 
         <div class="workspace" id="main-workspace">
-            <div id="video-grid">
+            <div id="video-grid" class="grid-1">
                 
                 <div class="video-container" id="local-container" data-type="camera" title="Double click to expand">
                     <div class="avatar-bubble">
@@ -242,6 +231,10 @@
             <div class="sidebar glass-panel" id="chat-sidebar">
                 <div class="chat-header">
                     Live Chat
+                    <div class="admin-chat-tools" id="admin-chat-tools">
+                        <button onclick="downloadChat()" title="Download Chat History">📥</button>
+                        <button class="danger" onclick="clearChat()" title="Clear Chat For All">🗑️</button>
+                    </div>
                     <button class="close-chat" onclick="toggleChat()">×</button>
                 </div>
                 <div id="chat-messages"></div>
