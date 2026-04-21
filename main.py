@@ -14,7 +14,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 class ConnectionManager:
     def __init__(self):
         self.active_connections = {}
-        self.meeting_status = "active" # وضعیت زنده جلسه را نگه می‌دارد
+        self.meeting_status = "active"
 
     async def connect(self, websocket: WebSocket, client_id: str, role: str):
         await websocket.accept()
@@ -71,7 +71,6 @@ async def login_api(request: Request):
 async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
     await manager.connect(websocket, client_id, role)
     
-    # اگر کاربر عادی آمد و جلسه پاز بود، مستقیماً به اتاق انتظار بفرست
     if manager.meeting_status == "paused" and role != 'admin':
         await websocket.send_text(json.dumps({"type": "meeting-paused"}))
     else:
@@ -92,7 +91,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
                     "type": "chat",
                     "sender": client_id,
                     "text": message['text'],
-                    "role": role
+                    "senderName": message.get('senderName', 'User')
                 }))
             
             elif message['type'] == 'admin-action':
