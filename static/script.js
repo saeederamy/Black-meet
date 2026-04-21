@@ -4,7 +4,8 @@ let peerConnections = {};
 const configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] };
 const clientId = Math.random().toString(36).substring(7);
 let myRole = 'user';
-let isScreenSharing = false;
+let myUsername = 'User'; // ذخیره نام واقعی کاربر
+let peerNames = {}; // نقشه ذخیره نام بقیه بر اساس آیدی
 
 let isAudioMuted = false;
 let isVideoMuted = false;
@@ -16,29 +17,33 @@ const SVGs = {
     camOn: '<svg viewBox="0 0 24 24"><path d="M15 8v8H5V8h10m1-2H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4V7c0-.55-.45-1-1-1z"/></svg>',
     camOff: '<svg viewBox="0 0 24 24"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z"/></svg>',
     endCall: '<svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.52-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>',
-    startCall: '<svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>'
+    startCall: '<svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>',
+    pin: '<svg viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>'
 };
 
 document.getElementById('btn-mic').innerHTML = SVGs.micOn;
 document.getElementById('btn-cam').innerHTML = SVGs.camOn;
 
 async function login() {
-    // مشکل لاگین گوشی: حذف فاصله‌های اضافی و کوچک کردن حروف
-    const user = document.getElementById('username').value.trim().toLowerCase();
+    const userRaw = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
-    if (!user || !pass) return;
+    if (!userRaw || !pass) return;
+
+    // نگهداری نام اصلی (حتی اگر لاگین با نام کاربری باشد، ما نام نمایشی را می‌فرستیم)
+    // برای سادگی فرض می‌کنیم یوزرنیم همان نام نمایشی است.
+    myUsername = userRaw;
 
     try {
         const response = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: user, password: pass })
+            body: JSON.stringify({ username: userRaw.toLowerCase(), password: pass })
         });
         const result = await response.json();
         
         if (result.success) {
             myRole = result.role;
-            document.getElementById('role-display').innerText = myRole.toUpperCase();
+            document.getElementById('my-name-display').innerText = myUsername;
             
             if (myRole === 'admin') {
                 document.getElementById('admin-controls').style.display = 'inline';
@@ -52,10 +57,39 @@ async function login() {
             connectWebSocket();
             setupFullscreen(document.getElementById('local-container'));
         } else {
-            alert("Authentication Failed! Please check your credentials.");
+            alert("Authentication Failed! Check credentials.");
         }
     } catch (error) {
-        alert("Server Error. Make sure you are using HTTPS.");
+        alert("Server Error.");
+    }
+}
+
+// تابع باز و بسته کردن منوی چت
+function toggleChat() {
+    const sidebar = document.getElementById('chat-sidebar');
+    sidebar.classList.toggle('show');
+}
+
+// تابع پین کردن ویدیو (گوگل میت استایل)
+function togglePin(peerId) {
+    const containerId = peerId === 'local' ? 'local-container' : `container-${peerId}`;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const isPinned = container.classList.contains('pinned');
+    
+    // ابتدا پین همه را برداریم
+    document.querySelectorAll('.video-container').forEach(c => {
+        c.classList.remove('pinned');
+        const btn = c.querySelector('.pin-btn');
+        if(btn) btn.classList.remove('active');
+    });
+
+    // اگر قبلاً پین نبود، حالا پین کن
+    if (!isPinned) {
+        container.classList.add('pinned');
+        const btn = container.querySelector('.pin-btn');
+        if(btn) btn.classList.add('active');
     }
 }
 
@@ -94,7 +128,7 @@ function connectWebSocket() {
                 removeUserVideo(message.client_id);
                 break;
             case 'chat':
-                appendChat(message); // پیام‌ها حالا فقط از طریق سرور دریافت و چاپ می‌شوند
+                appendChat(message);
                 break;
             case 'meeting-paused':
                 if (myRole !== 'admin') {
@@ -139,12 +173,12 @@ function toggleMeetingState() {
         ws.send(JSON.stringify({ type: 'admin-action', action: 'pause-meeting' }));
         isMeetingActive = false;
         btn.innerHTML = SVGs.startCall;
-        btn.classList.replace('active-red', 'active-green');
+        btn.classList.remove('active-red');
     } else {
         ws.send(JSON.stringify({ type: 'admin-action', action: 'resume-meeting' }));
         isMeetingActive = true;
         btn.innerHTML = SVGs.endCall;
-        btn.classList.replace('active-green', 'active-red');
+        btn.classList.add('active-red');
     }
 }
 
@@ -163,7 +197,6 @@ function createPeerConnection(peerId, isInitiator) {
     };
 
     pc.ontrack = event => {
-        // مشکل نیامدن تصویر بقیه: اطمینان از دریافت کامل استریم
         if (event.streams && event.streams[0]) {
             addRemoteVideo(peerId, event.streams[0]);
         }
@@ -172,23 +205,43 @@ function createPeerConnection(peerId, isInitiator) {
     if (isInitiator) {
         pc.createOffer().then(offer => {
             pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'offer', target: peerId, offer: offer, senderId: clientId }));
+            // ارسال نام همراه با Offer
+            ws.send(JSON.stringify({ type: 'offer', target: peerId, offer: offer, senderId: clientId, senderName: myUsername }));
         });
     }
     return pc;
 }
 
+// تابع بروزرسانی نام روی ویدیو
+function updateVideoLabel(peerId, name) {
+    const labelSpan = document.getElementById(`name-${peerId}`);
+    if (labelSpan && name) {
+        labelSpan.innerText = name;
+    }
+}
+
 async function handleOffer(message) {
     const peerId = message.senderId;
+    if (message.senderName) {
+        peerNames[peerId] = message.senderName;
+        updateVideoLabel(peerId, message.senderName);
+    }
+    
     const pc = createPeerConnection(peerId, false);
     await pc.setRemoteDescription(new RTCSessionDescription(message.offer));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
-    ws.send(JSON.stringify({ type: 'answer', target: peerId, answer: answer, senderId: clientId }));
+    
+    // ارسال نام به همراه Answer
+    ws.send(JSON.stringify({ type: 'answer', target: peerId, answer: answer, senderId: clientId, senderName: myUsername }));
 }
 
 async function handleAnswer(message) {
     const pc = peerConnections[message.senderId];
+    if (message.senderName) {
+        peerNames[message.senderId] = message.senderName;
+        updateVideoLabel(message.senderId, message.senderName);
+    }
     if (pc) await pc.setRemoteDescription(new RTCSessionDescription(message.answer));
 }
 
@@ -203,7 +256,13 @@ function addRemoteVideo(peerId, stream) {
     const container = document.createElement('div');
     container.className = 'video-container remote-video';
     container.id = `container-${peerId}`;
-    container.title = "Double click to fullscreen";
+
+    const pinBtn = document.createElement('button');
+    pinBtn.className = 'pin-btn';
+    pinBtn.title = "Pin video";
+    pinBtn.innerHTML = SVGs.pin;
+    pinBtn.onclick = () => togglePin(peerId);
+    container.appendChild(pinBtn);
 
     const video = document.createElement('video');
     video.id = `video-${peerId}`;
@@ -214,7 +273,8 @@ function addRemoteVideo(peerId, stream) {
 
     const label = document.createElement('div');
     label.className = 'label';
-    label.innerText = `User ${peerId.substring(0,4)}`;
+    const displayName = peerNames[peerId] || `User ${peerId.substring(0,4)}`;
+    label.innerHTML = `<span id="name-${peerId}">${displayName}</span>`;
     container.appendChild(label);
 
     setupFullscreen(container);
@@ -231,11 +291,8 @@ function setupFullscreen(containerElement) {
             document.exitFullscreen();
         }
     };
-    
     document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            containerElement.classList.remove('fullscreen');
-        }
+        if (!document.fullscreenElement) containerElement.classList.remove('fullscreen');
     });
 }
 
@@ -251,15 +308,14 @@ function removeUserVideo(peerId) {
 function toggleAudio(forceMute = false) {
     if (!localStream) return;
     isAudioMuted = forceMute ? true : !isAudioMuted;
-    
     localStream.getAudioTracks().forEach(t => t.enabled = !isAudioMuted);
     
     const btn = document.getElementById('btn-mic');
     if (isAudioMuted) {
-        btn.classList.replace('active-green', 'active-red');
+        btn.classList.add('active-red');
         btn.innerHTML = SVGs.micOff;
     } else {
-        btn.classList.replace('active-red', 'active-green');
+        btn.classList.remove('active-red');
         btn.innerHTML = SVGs.micOn;
     }
 }
@@ -267,15 +323,14 @@ function toggleAudio(forceMute = false) {
 function toggleVideo(forceMute = false) {
     if (!localStream) return;
     isVideoMuted = forceMute ? true : !isVideoMuted;
-    
     localStream.getVideoTracks().forEach(t => t.enabled = !isVideoMuted);
     
     const btn = document.getElementById('btn-cam');
     if (isVideoMuted) {
-        btn.classList.replace('active-blue', 'active-red');
+        btn.classList.add('active-red');
         btn.innerHTML = SVGs.camOff;
     } else {
-        btn.classList.replace('active-red', 'active-blue');
+        btn.classList.remove('active-red');
         btn.innerHTML = SVGs.camOn;
     }
 }
@@ -293,6 +348,9 @@ async function toggleScreenShare() {
             document.getElementById('local-video').srcObject = screenStream;
             isScreenSharing = true;
 
+            // وقتی اسکرین شیر را می‌زنیم، اتوماتیک خودمان را پین کنیم تا بهتر ببینیم چی شیر کردیم
+            togglePin('local');
+
             screenTrack.onended = () => {
                 const videoTrack = localStream.getVideoTracks()[0];
                 for (let id in peerConnections) {
@@ -301,6 +359,11 @@ async function toggleScreenShare() {
                 }
                 document.getElementById('local-video').srcObject = localStream;
                 isScreenSharing = false;
+                
+                // برداشتن پین
+                const localCont = document.getElementById('local-container');
+                localCont.classList.remove('pinned');
+                localCont.querySelector('.pin-btn').classList.remove('active');
             };
         } catch (error) {}
     }
@@ -309,8 +372,8 @@ async function toggleScreenShare() {
 function sendChat() {
     const input = document.getElementById('chat-input');
     if (input.value.trim() !== '') {
-        // پیام فقط به سرور ارسال میشه و چاپ محلی حذف شد تا دوتا نشه
-        ws.send(JSON.stringify({ type: 'chat', text: input.value }));
+        // نام واقعی به همراه پیام چت برای سرور ارسال می‌شود
+        ws.send(JSON.stringify({ type: 'chat', text: input.value, senderName: myUsername }));
         input.value = '';
     }
 }
@@ -321,11 +384,19 @@ document.getElementById('chat-input')?.addEventListener('keypress', function (e)
 
 function appendChat(msg) {
     const chatBox = document.getElementById('chat-messages');
-    
-    // تشخیص اینکه پیام از طرف خودمان است یا دیگران با بررسی آی‌دی کلاینت
     const isMe = msg.sender === clientId;
-    let senderName = isMe ? 'You' : (msg.role === 'admin' ? 'Host' : `User ${msg.sender.substring(0,4)}`);
     
-    chatBox.innerHTML += `<div class="chat-msg"><b>${senderName}</b> ${msg.text}</div>`;
+    // اگر در پیام نام فرستنده بود (نسخه جدید) از آن استفاده کن
+    let senderName = msg.senderName || (msg.role === 'admin' ? 'Host' : `User ${msg.sender.substring(0,4)}`);
+    if (isMe) senderName = 'You';
+    
+    const alignClass = isMe ? 'me' : '';
+    chatBox.innerHTML += `<div class="chat-msg ${alignClass}"><b>${senderName}</b> <br> ${msg.text}</div>`;
     chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // اگر پیام آمد و منوی چت بسته بود، آن را باز کن (اختیاری)
+    const sidebar = document.getElementById('chat-sidebar');
+    if(!sidebar.classList.contains('show')) {
+        toggleChat();
+    }
 }
