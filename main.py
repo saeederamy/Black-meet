@@ -14,6 +14,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 class ConnectionManager:
     def __init__(self):
         self.active_connections = {}
+        self.meeting_status = "active" # وضعیت زنده جلسه را نگه می‌دارد
 
     async def connect(self, websocket: WebSocket, client_id: str, role: str):
         await websocket.accept()
@@ -69,7 +70,12 @@ async def login_api(request: Request):
 @app.websocket("/ws/{client_id}/{role}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
     await manager.connect(websocket, client_id, role)
-    await manager.broadcast(json.dumps({"type": "user-joined", "client_id": client_id, "role": role}), exclude=websocket)
+    
+    # اگر کاربر عادی آمد و جلسه پاز بود، مستقیماً به اتاق انتظار بفرست
+    if manager.meeting_status == "paused" and role != 'admin':
+        await websocket.send_text(json.dumps({"type": "meeting-paused"}))
+    else:
+        await manager.broadcast(json.dumps({"type": "user-joined", "client_id": client_id, "role": role}), exclude=websocket)
 
     try:
         while True:
@@ -92,8 +98,12 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
             elif message['type'] == 'admin-action':
                 if role == 'admin':
                     action = message['action']
-                    if action == 'end-call':
-                        await manager.broadcast(json.dumps({"type": "call-ended"}))
+                    if action == 'pause-meeting':
+                        manager.meeting_status = "paused"
+                        await manager.broadcast(json.dumps({"type": "meeting-paused"}))
+                    elif action == 'resume-meeting':
+                        manager.meeting_status = "active"
+                        await manager.broadcast(json.dumps({"type": "meeting-resumed"}))
                     elif action in ['mute-mic', 'mute-cam']:
                         target_ws = manager.get_client(message['target_id'])
                         if target_ws:
