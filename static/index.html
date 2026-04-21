@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Black Meet</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* --- متغیرها و تنظیمات پایه --- */
         :root {
-            --primary-blue: #3b82f6;
-            --primary-hover: #2563eb;
-            --dark-bg: #0f172a;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --danger-red: #ef4444;
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+            --highlight: #ffffff;
+            --danger: #ff3333;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        }
 
         body {
-            background-color: var(--dark-bg);
-            /* یک پس‌زمینه با هاله های رنگی برای جلوه شیشه‌ای */
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
-            color: white;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 70%);
+            color: var(--text-color);
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -32,21 +32,20 @@
             justify-content: center;
         }
 
-        /* --- کلاس پایه شیشه‌ای (Glassmorphism) --- */
-        .glass-panel {
+        .glass {
             background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.1);
         }
 
-        /* --- صفحه لاگین --- */
+        /* Login Screen */
         #login-screen {
             width: 100%;
-            max-width: 400px;
-            padding: 40px;
+            max-width: 380px;
+            padding: 40px 30px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -54,59 +53,46 @@
         }
 
         #login-screen h2 {
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             margin-bottom: 10px;
-            background: -webkit-linear-gradient(#fff, #93c5fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .input-group {
-            position: relative;
-            width: 100%;
-        }
-
-        .input-group span {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
         }
 
         input {
             width: 100%;
-            padding: 15px 45px 15px 15px;
-            background: rgba(0, 0, 0, 0.3);
+            padding: 14px 15px;
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            border-radius: 10px;
             color: white;
-            font-size: 16px;
-            transition: all 0.3s ease;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
         }
 
-        input:focus {
-            outline: none;
-            border-color: var(--primary-blue);
-            background: rgba(0, 0, 0, 0.5);
-        }
+        input:focus { border-color: var(--highlight); }
 
         .btn-primary {
-            background: var(--primary-blue);
-            color: white;
+            background: var(--highlight);
+            color: #000;
             border: none;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 18px;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
+            transition: all 0.3s;
         }
 
-        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
 
-        /* --- صفحه کنفرانس --- */
+        /* Meet Screen */
         #meet-screen {
             display: none;
             width: 100vw;
@@ -114,209 +100,174 @@
             flex-direction: column;
         }
 
-        /* بخش اصلی شامل ویدیوها و چت */
-        .main-workspace {
+        .workspace {
             display: flex;
             flex: 1;
             padding: 20px;
             gap: 20px;
-            height: calc(100vh - 100px); /* فضای نوار پایین را کم می‌کنیم */
+            height: calc(100vh - 90px);
         }
 
-        /* گرید ویدیوها */
         #video-grid {
             flex: 3;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
             align-content: center;
         }
 
-        /* استایل کانتینر ویدیوها (شامل ویدیوهای اضافه شده توسط جاوااسکریپت) */
-        #video-grid > div {
+        .video-container {
             position: relative;
             background: #000;
-            border-radius: 16px;
+            border-radius: 15px;
             overflow: hidden;
             border: 1px solid var(--glass-border);
             aspect-ratio: 16 / 9;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        #video-grid video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        video { width: 100%; height: 100%; object-fit: cover; }
 
-        .video-label {
+        .label {
             position: absolute;
             bottom: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* پنل کناری (چت) */
+        .admin-video-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .admin-video-controls button {
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 5px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Sidebar Chat */
         .sidebar {
             flex: 1;
-            max-width: 350px;
+            max-width: 320px;
             display: flex;
             flex-direction: column;
             padding: 20px;
-            border-radius: 24px;
+        }
+
+        .chat-header {
+            font-weight: bold;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         #chat-messages {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: 15px;
-            padding-right: 5px;
             font-size: 14px;
         }
 
-        #chat-messages p { margin-bottom: 10px; line-height: 1.5; }
-        #chat-messages b { color: var(--primary-blue); }
+        .chat-msg { margin-bottom: 10px; line-height: 1.4; color: #ccc;}
+        .chat-msg b { color: #fff; }
 
-        .chat-input-area {
+        .chat-input {
             display: flex;
             gap: 10px;
+            margin-top: 15px;
         }
 
-        .chat-input-area input {
-            padding: 12px;
-            margin: 0;
-            border-radius: 20px;
-        }
-
-        .chat-input-area button {
-            background: var(--primary-blue);
+        .chat-input button {
+            background: var(--highlight);
+            color: #000;
             border: none;
-            color: white;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border-radius: 10px;
+            padding: 0 15px;
             cursor: pointer;
+            font-weight: bold;
         }
 
-        /* نوار کنترل پایین (Bottom Bar) مشابه گوگل میت */
+        /* Bottom Bar */
         .bottom-bar {
             height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
-            padding: 0 20px;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
+            background: rgba(0, 0, 0, 0.4);
             border-top: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
         }
 
-        .control-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
             color: white;
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
-            transition: all 0.3s;
+            font-size: 20px;
+            transition: all 0.2s;
         }
 
-        .control-btn:hover { background: rgba(255, 255, 255, 0.2); }
-        .control-btn.active { background: var(--primary-blue); border-color: var(--primary-blue);}
-        .control-btn.danger { background: var(--danger-red); border-color: var(--danger-red);}
-        .control-btn.danger:hover { background: #b91c1c; }
-        
-        .admin-section {
-            display: none;
-            border-right: 1px solid var(--glass-border);
-            padding-right: 15px;
-            margin-right: 5px;
-            gap: 15px;
-        }
+        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.15); }
+        .ctrl-btn.danger { color: var(--danger); border-color: rgba(255, 51, 51, 0.3); }
+        .ctrl-btn.danger:hover { background: rgba(255, 51, 51, 0.2); }
 
-        /* استایل اسکرول بار اختصاصی */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
-
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="glass-panel">
+    <div id="login-screen" class="glass">
         <h2>Black Meet</h2>
-        <p style="color: #94a3b8; font-size: 14px;">لطفاً اطلاعات خود را وارد کنید</p>
-        
-        <div class="input-group">
-            <span class="material-icons">person</span>
-            <input type="text" id="username" placeholder="نام کاربری">
-        </div>
-        
-        <div class="input-group">
-            <span class="material-icons">lock</span>
-            <input type="password" id="password" placeholder="رمز عبور">
-        </div>
-        
-        <button class="btn-primary" onclick="login()">ورود به جلسه</button>
+        <p style="color: #888; font-size: 13px;">Secure Connection</p>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button class="btn-primary" onclick="login()">Connect</button>
     </div>
 
     <div id="meet-screen">
-        
-        <div class="main-workspace">
+        <div class="workspace">
             <div id="video-grid">
-                <div>
+                <div class="video-container">
                     <video id="local-video" autoplay muted playsinline></video>
-                    <div class="video-label">شما (<span id="role-display"></span>)</div>
+                    <div class="label">You (<span id="role-display"></span>)</div>
                 </div>
             </div>
 
-            <div class="sidebar glass-panel">
-                <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-icons" style="color: var(--primary-blue);">chat</span>
-                    گفتگوی جلسه
-                </div>
-                
+            <div class="sidebar glass">
+                <div class="chat-header">💬 Live Chat</div>
                 <div id="chat-messages"></div>
-                
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="پیام شما...">
-                    <button onclick="sendChat()">
-                        <span class="material-icons">send</span>
-                    </button>
+                <div class="chat-input">
+                    <input type="text" id="chat-input" placeholder="Message...">
+                    <button onclick="sendChat()">Send</button>
                 </div>
             </div>
         </div>
         
         <div class="bottom-bar">
-            <button class="control-btn" id="btn-mic" onclick="toggleAudio()" title="میکروفون">
-                <span class="material-icons">mic</span>
-            </button>
-            <button class="control-btn" id="btn-cam" onclick="toggleVideo()" title="دوربین">
-                <span class="material-icons">videocam</span>
-            </button>
-            <button class="control-btn" onclick="toggleScreenShare()" title="اشتراک صفحه">
-                <span class="material-icons">present_to_all</span>
-            </button>
+            <button class="ctrl-btn" onclick="toggleAudio()" title="Microphone">🎙️</button>
+            <button class="ctrl-btn" onclick="toggleVideo()" title="Camera">📷</button>
+            <button class="ctrl-btn" onclick="toggleScreenShare()" title="Screen Share">💻</button>
             
-            <div class="admin-section" id="admin-controls">
-                <button class="control-btn danger" onclick="endCall()" title="پایان جلسه برای همه">
-                    <span class="material-icons">call_end</span>
-                </button>
-            </div>
+            <span id="admin-controls" style="display: none; border-left: 1px solid var(--glass-border); padding-left: 15px; margin-left: 5px;">
+                <button class="ctrl-btn danger" onclick="endCall()" title="End Call for All">🛑</button>
+            </span>
         </div>
-
     </div>
 
     <script src="/static/script.js"></script>
