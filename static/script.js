@@ -14,33 +14,68 @@ let isScreenSharing = false;
 let myScreenStream = null;
 let screenSenderMap = {}; 
 
+// متغیرهای ضبط (DVR) و آنالیز صدا
+let mediaRecorder;
+let recordedChunks = [];
+let audioContext;
+
 const SVGs = {
     micOn: '<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
     micOff: '<svg viewBox="0 0 24 24"><path d="M19 11h-2c0 .91-.26 1.75-.69 2.48l1.46 1.46A6.921 6.921 0 0019 11zM14.93 14.93l-2.43-2.43c.03-.16.05-.33.05-.5V5c0-1.66-1.34-3-3-3S6.5 3.34 6.5 5v1.07l-2 2V5c0-2.76 2.24-5 5-5s5 2.24 5 5v7c0 .5-.1 1-.26 1.47l1.69 1.69c.56-.84.95-1.8.99-2.85h2c-.04 1.57-.49 3.01-1.23 4.21l1.45 1.45c.95-1.39 1.55-3.05 1.61-4.85zM12 14c-1.66 0-3-1.34-3-3V5.59L15.41 15C14.48 15.65 13.3 16 12 16c-2.76 0-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c1.66-.24 3.16-.99 4.31-2.04l-1.39-1.39C14.83 15.54 13.48 16 12 16v-2z"/></svg>',
     camOn: '<svg viewBox="0 0 24 24"><path d="M15 8v8H5V8h10m1-2H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4V7c0-.55-.45-1-1-1z"/></svg>',
     camOff: '<svg viewBox="0 0 24 24"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z"/></svg>',
-    endCall: '<svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.52-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>',
-    startCall: '<svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>'
+    endCall: '<svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.52-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>'
 };
 
 document.getElementById('btn-mic').innerHTML = SVGs.micOn;
 document.getElementById('btn-cam').innerHTML = SVGs.camOn;
 
 document.addEventListener('click', (e) => {
-    if (!e.target.matches('.three-dots-btn')) {
-        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
-    }
+    if (!e.target.matches('.three-dots-btn')) document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
 });
 
 function getInitials(name) { return name ? name.substring(0, 2).toUpperCase() : 'U'; }
 
-// تابع آپدیت هوشمند گرید
 function updateGridLayout() {
     const grid = document.getElementById('video-grid');
     const visibleCount = Array.from(grid.children).filter(c => c.style.display !== 'none').length;
-    grid.className = ''; // حذف کلاس‌های قبلی
+    grid.className = '';
     if (visibleCount <= 6) grid.classList.add(`grid-${visibleCount}`);
     else grid.classList.add('grid-many');
+}
+
+// هوش مصنوعی تشخیص سطح صدای زنده کاربر
+function getAudioContext() {
+    if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    return audioContext;
+}
+
+function attachVolumeMeter(stream, iconId) {
+    const audioTracks = stream.getAudioTracks();
+    if(audioTracks.length === 0) return;
+    const ctx = getAudioContext();
+    const mediaStream = new MediaStream([audioTracks[0]]);
+    try {
+        const source = ctx.createMediaStreamSource(mediaStream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        function check() {
+            const icon = document.getElementById(iconId);
+            if(!icon) return; 
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+            let avg = sum / dataArray.length;
+            
+            if(avg > 10) icon.classList.add('speaking');
+            else icon.classList.remove('speaking');
+            requestAnimationFrame(check);
+        }
+        check();
+    } catch(err) { console.log("Audio analyzer fallback", err); }
 }
 
 async function login() {
@@ -63,9 +98,9 @@ async function login() {
             document.getElementById('local-avatar').innerText = getInitials(myUsername);
             
             if (myRole === 'admin') {
-                document.getElementById('admin-controls').style.display = 'inline';
-                document.getElementById('admin-chat-tools').style.display = 'flex';
+                document.getElementById('admin-controls').style.display = 'inline-flex';
                 document.getElementById('btn-meeting-state').innerHTML = SVGs.endCall;
+                document.getElementById('admin-tab-btn').style.display = 'block';
             }
 
             document.getElementById('login-wrapper').style.display = 'none';
@@ -75,13 +110,39 @@ async function login() {
             connectWebSocket();
             setupDoubleClickHandler(document.getElementById('local-container'));
             updateGridLayout();
+            refreshUserList();
         } else {
             alert("Authorization Denied!");
         }
     } catch (error) { alert("Server Offline."); }
 }
 
-function toggleChat() { document.getElementById('chat-sidebar').classList.toggle('show'); }
+// مدیریت تب‌های سایدبار
+function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
+function switchSidebarTab(tabName) {
+    document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sb-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(`panel-${tabName}`).classList.add('active');
+}
+
+function refreshUserList() {
+    const list = document.getElementById('users-list');
+    list.innerHTML = `
+        <div class="user-row">
+            <div class="avatar">${getInitials(myUsername)}</div>
+            <div class="name">${myUsername} (You)</div>
+        </div>
+    `;
+    for(let id in peerNames) {
+        list.innerHTML += `
+            <div class="user-row">
+                <div class="avatar">${getInitials(peerNames[id])}</div>
+                <div class="name">${peerNames[id]}</div>
+            </div>
+        `;
+    }
+}
 
 function toggleMenu(menuId) {
     const menu = document.getElementById(menuId);
@@ -133,6 +194,8 @@ async function initMedia() {
         document.getElementById('local-video').srcObject = localStream;
         localStream.getAudioTracks().forEach(t => t.enabled = !isAudioMuted);
         localStream.getVideoTracks().forEach(t => t.enabled = !isVideoMuted);
+        
+        attachVolumeMeter(localStream, 'mic-local'); // روشن شدن هوش مصنوعی صدا برای خودمان
     } catch(e) { console.error("Camera access denied."); }
 }
 
@@ -144,7 +207,7 @@ function connectWebSocket() {
         const message = JSON.parse(event.data);
         switch (message.type) {
             case 'chat-history':
-                document.getElementById('chat-messages').innerHTML = ''; // پاک کردن قبلیا
+                document.getElementById('chat-messages').innerHTML = ''; 
                 message.history.forEach(msg => appendChat(msg, true));
                 break;
             case 'user-joined':
@@ -164,12 +227,14 @@ function connectWebSocket() {
                 break;
             case 'user-left':
                 removeUserVideo(message.client_id);
+                delete peerNames[message.client_id];
+                refreshUserList();
                 break;
             case 'chat':
                 appendChat(message);
                 break;
             case 'chat-cleared':
-                document.getElementById('chat-messages').innerHTML = '<div style="text-align:center; color:#888; font-size:12px;">Admin cleared the chat history.</div>';
+                document.getElementById('chat-messages').innerHTML = '<div style="text-align:center; color:#888; font-size:12px; margin-top:20px;">Admin cleared the chat history.</div>';
                 break;
             case 'cam-state':
                 const container = document.getElementById(`container-${message.senderId}-camera`);
@@ -178,7 +243,7 @@ function connectWebSocket() {
                     else container.classList.remove('cam-off');
                 }
                 break;
-            case 'stop-screen': // سیگنال رفع باگ فریز موندن اسکرین شیر
+            case 'stop-screen':
                 const sCont = document.getElementById(`container-${message.senderId}-screen`);
                 if (sCont) sCont.remove();
                 if (peerConnections[`${message.senderId}-screen`]) {
@@ -240,7 +305,10 @@ function createPeerConnection(peerId, streamType, isInitiator, stream) {
 async function handleOffer(message) {
     const peerId = message.senderId;
     const streamType = message.streamType;
-    if (message.senderName) peerNames[peerId] = message.senderName;
+    if (message.senderName) {
+        peerNames[peerId] = message.senderName;
+        refreshUserList();
+    }
     
     const streamToShare = streamType === 'camera' ? localStream : null; 
     const pc = peerConnections[`${peerId}-${streamType}`] || createPeerConnection(peerId, streamType, false, streamToShare);
@@ -261,6 +329,7 @@ async function handleAnswer(message) {
         peerNames[message.senderId] = message.senderName;
         document.querySelectorAll(`.name-${message.senderId}`).forEach(el => el.innerText = message.senderName);
         document.querySelectorAll(`.init-${message.senderId}`).forEach(el => el.innerText = getInitials(message.senderName));
+        refreshUserList();
     }
     if (pc) { try { await pc.setRemoteDescription(new RTCSessionDescription(message.answer)); } catch(err) {} }
 }
@@ -320,7 +389,9 @@ function addRemoteVideo(peerId, stream, streamType) {
 
     const label = document.createElement('div');
     label.className = `label ${isScreen ? 'screen-lbl' : ''}`;
-    label.innerHTML = `<span class="name-${peerId}">${labelText}</span>`;
+    // اضافه شدن آیکون میکروفون برای بقیه
+    let micHtml = isScreen ? '' : `<span class="mic-indicator" id="mic-${peerId}"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg></span>`;
+    label.innerHTML = `${micHtml} <span class="name-${peerId}">${labelText}</span>`;
     container.appendChild(label);
 
     setupDoubleClickHandler(container);
@@ -330,6 +401,10 @@ function addRemoteVideo(peerId, stream, streamType) {
     if (activeTab.includes('camera') && isScreen) container.style.display = 'none';
 
     document.getElementById('video-grid').appendChild(container);
+    
+    // فعال کردن تشخیص صدا برای ویدیوهای بقیه
+    if(!isScreen) attachVolumeMeter(stream, `mic-${peerId}`);
+    
     updateGridLayout();
 }
 
@@ -355,9 +430,11 @@ function toggleAudio(forceMute = false) {
     if (isAudioMuted) {
         btn.classList.replace('active-blue', 'active-red');
         btn.innerHTML = SVGs.micOff;
+        document.getElementById('mic-local').style.display = 'none';
     } else {
         btn.classList.replace('active-red', 'active-blue');
         btn.innerHTML = SVGs.micOn;
+        document.getElementById('mic-local').style.display = 'flex';
     }
 }
 
@@ -398,6 +475,63 @@ function toggleMeetingState() {
     }
 }
 
+// سیستم ضبط جلسه مرورگر (DVR) اختصاصی ادمین
+async function toggleRecording() {
+    const btn = document.getElementById('btn-record');
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        btn.classList.remove('record-pulse');
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        
+        mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            recordedChunks = [];
+            const url = URL.createObjectURL(blob);
+            const dateStr = new Date().toLocaleString();
+            
+            // اضافه کردن به لیست پنل ادمین
+            const list = document.getElementById('recordings-list');
+            if (list.innerText.includes('No recordings')) list.innerHTML = '';
+            
+            const recId = 'rec_' + Date.now();
+            list.innerHTML += `
+                <div class="rec-item" id="${recId}">
+                    <div class="rec-title">Meeting Session - ${dateStr}</div>
+                    <div class="rec-actions">
+                        <button class="rec-btn btn-dl" onclick="downloadRecording('${url}', '${dateStr}')">Download HD</button>
+                        <button class="rec-btn btn-del" onclick="document.getElementById('${recId}').remove()">Delete</button>
+                    </div>
+                </div>
+            `;
+            
+            if(!document.getElementById('main-sidebar').classList.contains('show')) toggleSidebar();
+            switchSidebarTab('admin');
+        };
+        
+        mediaRecorder.start();
+        btn.classList.add('record-pulse');
+    } catch (err) { console.error("Recording permission denied"); }
+}
+
+function downloadRecording(url, date) {
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `BlackMeet_Record_${date.replace(/[/, :]/g, '_')}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
 async function toggleScreenShare() {
     if (!isScreenSharing) {
         try {
@@ -425,7 +559,6 @@ function stopScreenShare() {
     if (!isScreenSharing) return;
     if (myScreenStream) myScreenStream.getTracks().forEach(t => t.stop());
     
-    // ارسال سیگنال مستقیم برای حذف کپسول اسکرین از سیستم بقیه
     ws.send(JSON.stringify({ type: 'stop-screen', senderId: clientId }));
     
     Object.keys(peerConnections).forEach(pcKey => {
@@ -478,7 +611,6 @@ function addLocalScreenShare(stream) {
     updateGridLayout();
 }
 
-/* --- Admin Chat Features --- */
 function clearChat() {
     if(confirm("Are you sure you want to clear the chat history for everyone?")) {
         ws.send(JSON.stringify({ type: 'admin-action', action: 'clear-chat' }));
@@ -520,12 +652,12 @@ function appendChat(msg, isHistory = false) {
     
     if (!isHistory) {
         chatBox.scrollTop = chatBox.scrollHeight;
-        if(!document.getElementById('chat-sidebar').classList.contains('show')) {
-            const chatBtn = document.querySelector('[title="Open Chat"]');
+        if(!document.getElementById('main-sidebar').classList.contains('show')) {
+            const chatBtn = document.querySelector('[title="Sidebar"]');
             if(chatBtn) {
                 chatBtn.style.transform = "scale(1.2)";
-                chatBtn.style.color = "var(--c-blue)";
-                setTimeout(() => { chatBtn.style.transform = "scale(1)"; chatBtn.style.color = "var(--c-white)";}, 1000);
+                chatBtn.style.background = "var(--c-blue)";
+                setTimeout(() => { chatBtn.style.transform = "scale(1)"; chatBtn.style.background = "rgba(255,255,255,0.05)";}, 1000);
             }
         }
     } else {
