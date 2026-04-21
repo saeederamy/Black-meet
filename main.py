@@ -1,12 +1,22 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 import uuid
 import subprocess
+import asyncio
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -15,53 +25,59 @@ USERS_FILE = os.path.join(BASE_DIR, "users.txt")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-def load_rooms():
-    if not os.path.exists(ROOMS_FILE):
-        default = {"default_room": {"name": "General Lounge", "members": []}}
-        with open(ROOMS_FILE, "w", encoding="utf-8") as f:
-            json.dump(default, f)
-        return default
-    with open(ROOMS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+@app.middleware("http")
+async def add_no_cache_header(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 def save_rooms(rooms):
     with open(ROOMS_FILE, "w", encoding="utf-8") as f:
         json.dump(rooms, f)
 
+def load_rooms():
+    if not os.path.exists(ROOMS_FILE):
+        default = {"default_room": {"name": "General Lounge", "members": []}}
+        save_rooms(default)
+        return default
+    try:
+        with open(ROOMS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        default = {"default_room": {"name": "General Lounge", "members": []}}
+        save_rooms(default)
+        return default
+
+# معماری جدید بر پایه صف‌های HTTP
 class ConnectionManager:
     def __init__(self):
-        self.active_connections = {}
+        self.rooms = {}
         self.meeting_status = {}
         self.chat_history = {}
 
-    async def connect(self, room_id: str, websocket: WebSocket, client_id: str, role: str):
-        await websocket.accept()
-        if room_id not in self.active_connections:
-            self.active_connections[room_id] = {}
+    async def connect(self, room_id: str, client_id: str, role: str):
+        if room_id not in self.rooms:
+            self.rooms[room_id] = {}
             self.meeting_status[room_id] = "active"
             self.chat_history[room_id] = []
-            
-        self.active_connections[room_id][websocket] = {"client_id": client_id, "role": role}
+        self.rooms[room_id][client_id] = {"role": role, "queue": asyncio.Queue()}
 
-    def disconnect(self, room_id: str, websocket: WebSocket):
-        if room_id in self.active_connections and websocket in self.active_connections[room_id]:
-            del self.active_connections[room_id][websocket]
+    def disconnect(self, room_id: str, client_id: str):
+        if room_id in self.rooms and client_id in self.rooms[room_id]:
+            del self.rooms[room_id][client_id]
 
-    async def broadcast(self, room_id: str, message: str, exclude: WebSocket = None):
-        if room_id in self.active_connections:
-            for connection in list(self.active_connections[room_id].keys()):
-                if connection != exclude:
-                    try:
-                        await connection.send_text(message)
-                    except:
-                        pass
+    async def broadcast(self, room_id: str, message: dict, exclude: str = None):
+        if room_id in self.rooms:
+            for cid, data in self.rooms[room_id].items():
+                if cid != exclude:
+                    await data["queue"].put(message)
 
-    def get_client(self, room_id: str, client_id: str):
-        if room_id in self.active_connections:
-            for ws, data in self.active_connections[room_id].items():
-                if data["client_id"] == client_id:
-                    return ws
-        return None
+    async def send_personal(self, room_id: str, target_client_id: str, message: dict):
+        if room_id in self.rooms and target_client_id in self.rooms[room_id]:
+            await self.rooms[room_id][target_client_id]["queue"].put(message)
 
 manager = ConnectionManager()
 
@@ -71,14 +87,12 @@ async def get_index():
 
 @app.post("/api/login")
 async def login_api(request: Request):
-    data = await request.json()
-    username = data.get("username")
-    password = data.get("password")
-    
-    if not os.path.exists(USERS_FILE):
-        return {"success": False, "message": "Database not found."}
-
     try:
+        data = await request.json()
+        username = data.get("username")
+        password = data.get("password")
+        if not os.path.exists(USERS_FILE):
+            return {"success": False, "message": "Database not found."}
         with open(USERS_FILE, "r", encoding="utf-8") as f:
             for line in f:
                 parts = line.strip().split(':')
@@ -86,12 +100,10 @@ async def login_api(request: Request):
                     u, p, r = parts[:3]
                     if u == username and p == password:
                         return {"success": True, "role": r, "username": u}
+        return {"success": False, "message": "Invalid Credentials."}
     except Exception as e:
-        return {"success": False, "message": f"Error: {str(e)}"}
-        
-    return {"success": False, "message": "Invalid Credentials."}
+        return {"success": False, "message": str(e)}
 
-# --- System Update API ---
 def restart_server():
     import time
     time.sleep(2)
@@ -102,136 +114,157 @@ async def system_update(request: Request, bg_tasks: BackgroundTasks):
     try:
         subprocess.run(["git", "fetch", "--all"], cwd=BASE_DIR, check=True)
         status = subprocess.run(["git", "status", "-uno"], cwd=BASE_DIR, capture_output=True, text=True)
-        
         if "Your branch is up to date" in status.stdout:
-            return {"success": True, "updated": False, "message": "System is already up-to-date! No changes found."}
-        
+            return {"success": True, "updated": False, "message": "System is up-to-date!"}
         subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=BASE_DIR, check=True)
         pip_path = os.path.join(BASE_DIR, "venv", "bin", "pip")
         if os.path.exists(pip_path):
             subprocess.run([pip_path, "install", "-r", "requirements.txt"], cwd=BASE_DIR)
-        
         bg_tasks.add_task(restart_server)
-        return {"success": True, "updated": True, "message": "Update successfully applied! System is restarting..."}
+        return {"success": True, "updated": True, "message": "Updating..."}
     except Exception as e:
-        return {"success": False, "message": f"Update Error: {str(e)}"}
+        return {"success": False, "message": str(e)}
 
-# --- Rooms API ---
-# اضافه شدن متغیر t برای دور زدن کش بدون گرفتن خطای امنیتی از سمت FastAPI
-@app.get("/api/rooms")
-async def get_rooms(username: str, role: str, t: str = None):
-    rooms = load_rooms()
-    user_rooms = {}
-    for r_id, r_data in rooms.items():
-        if role == 'admin' or username in r_data.get("members", []):
-            user_rooms[r_id] = r_data
-    return {"success": True, "rooms": user_rooms}
-
-@app.get("/api/users")
-async def get_users(t: str = None):
-    users = []
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                parts = line.strip().split(':')
-                if len(parts) >= 3:
-                    users.append(parts[0])
-    return {"success": True, "users": users}
-
-@app.post("/api/rooms")
-async def create_room(request: Request):
-    data = await request.json()
-    room_name = data.get("name")
-    rooms = load_rooms()
-    new_id = "room_" + uuid.uuid4().hex[:8]
-    rooms[new_id] = {"name": room_name, "members": []}
-    save_rooms(rooms)
-    return {"success": True, "rooms": rooms}
-
-@app.put("/api/rooms/{room_id}")
-async def rename_room(room_id: str, request: Request):
-    data = await request.json()
-    rooms = load_rooms()
-    if room_id in rooms:
-        rooms[room_id]["name"] = data.get("name")
-        save_rooms(rooms)
-        return {"success": True}
-    return {"success": False}
-
-@app.delete("/api/rooms/{room_id}")
-async def delete_room(room_id: str):
-    rooms = load_rooms()
-    if room_id in rooms:
-        del rooms[room_id]
-        save_rooms(rooms)
-        return {"success": True}
-    return {"success": False}
-
-@app.post("/api/rooms/{room_id}/members")
-async def update_members(room_id: str, request: Request):
-    data = await request.json()
-    rooms = load_rooms()
-    if room_id in rooms:
-        rooms[room_id]["members"] = data.get("members", [])
-        save_rooms(rooms)
-        return {"success": True}
-    return {"success": False}
-
-@app.websocket("/ws/{room_id}/{client_id}/{role}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: str, role: str):
-    await manager.connect(room_id, websocket, client_id, role)
-    
-    if manager.chat_history[room_id]:
-        await websocket.send_text(json.dumps({"type": "chat-history", "history": manager.chat_history[room_id]}))
-    
-    if manager.meeting_status[room_id] == "paused" and role != 'admin':
-        await websocket.send_text(json.dumps({"type": "meeting-paused"}))
-    else:
-        await manager.broadcast(room_id, json.dumps({"type": "user-joined", "client_id": client_id, "role": role}), exclude=websocket)
-
+@app.post("/api/users/list")
+async def get_users(request: Request):
     try:
-        while True:
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            
-            if message['type'] in ['offer', 'answer', 'ice-candidate']:
-                target_ws = manager.get_client(room_id, message['target'])
-                if target_ws:
-                    await target_ws.send_text(data)
-            
-            elif message['type'] in ['cam-state', 'stop-screen']:
-                 await manager.broadcast(room_id, data, exclude=websocket)
+        users = []
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split(':')
+                    if len(parts) >= 3:
+                        users.append(parts[0])
+        return {"success": True, "users": users}
+    except Exception as e:
+        return {"success": False, "message": str(e), "users": []}
 
-            elif message['type'] == 'chat':
-                chat_payload = {
-                    "type": "chat",
-                    "sender": client_id,
-                    "text": message['text'],
-                    "senderName": message.get('senderName', 'User'),
-                    "role": role
-                }
-                manager.chat_history[room_id].append(chat_payload)
-                if len(manager.chat_history[room_id]) > 200: 
-                    manager.chat_history[room_id].pop(0)
-                await manager.broadcast(room_id, json.dumps(chat_payload))
-            
-            elif message['type'] == 'admin-action':
-                if role == 'admin':
-                    action = message['action']
-                    if action == 'pause-meeting':
-                        manager.meeting_status[room_id] = "paused"
-                        await manager.broadcast(room_id, json.dumps({"type": "meeting-paused"}))
-                    elif action == 'resume-meeting':
-                        manager.meeting_status[room_id] = "active"
-                        await manager.broadcast(room_id, json.dumps({"type": "meeting-resumed"}))
-                    elif action == 'clear-chat':
-                        manager.chat_history[room_id] = []
-                        await manager.broadcast(room_id, json.dumps({"type": "chat-cleared"}))
-                    elif action in ['mute-mic', 'mute-cam']:
-                        target_ws = manager.get_client(room_id, message['target_id'])
-                        if target_ws:
-                            await target_ws.send_text(json.dumps({"type": "force-action", "action": action}))
+@app.post("/api/rooms/list")
+async def get_rooms(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        role = data.get("role")
+        rooms = load_rooms()
+        user_rooms = {}
+        for r_id, r_data in rooms.items():
+            if role == 'admin' or username in r_data.get("members", []):
+                user_rooms[r_id] = r_data
+        return {"success": True, "rooms": user_rooms}
+    except Exception as e:
+        return {"success": False, "message": str(e), "rooms": {}}
 
-    except WebSocketDisconnect:
-        manager.disconnect(room_id, websocket)
-        await manager.broadcast(room_id, json.dumps({"type": "user-left", "client_id": client_id}))
+@app.post("/api/room_action")
+async def room_action(request: Request):
+    try:
+        data = await request.json()
+        action = data.get("action")
+        rooms = load_rooms()
+        if action == "create":
+            new_id = "room_" + uuid.uuid4().hex[:8]
+            rooms[new_id] = {"name": data.get("name"), "members": []}
+            save_rooms(rooms)
+            return {"success": True}
+        elif action == "rename":
+            r_id = data.get("room_id")
+            if r_id in rooms:
+                rooms[r_id]["name"] = data.get("name")
+                save_rooms(rooms)
+                return {"success": True}
+        elif action == "delete":
+            r_id = data.get("room_id")
+            if r_id in rooms:
+                del rooms[r_id]
+                save_rooms(rooms)
+                return {"success": True}
+        elif action == "update_members":
+            r_id = data.get("room_id")
+            if r_id in rooms:
+                rooms[r_id]["members"] = data.get("members", [])
+                save_rooms(rooms)
+                return {"success": True}
+        return {"success": False}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+# --- سیستم انقلابی HTTP Long Polling جایگزین وب‌سوکت ---
+@app.post("/api/signaling/join")
+async def sig_join(request: Request):
+    data = await request.json()
+    room_id = data.get("room_id")
+    client_id = data.get("client_id")
+    role = data.get("role")
+    
+    await manager.connect(room_id, client_id, role)
+    if manager.chat_history[room_id]:
+        await manager.send_personal(room_id, client_id, {"type": "chat-history", "history": manager.chat_history[room_id]})
+    if manager.meeting_status[room_id] == "paused" and role != 'admin':
+        await manager.send_personal(room_id, client_id, {"type": "meeting-paused"})
+    else:
+        await manager.broadcast(room_id, {"type": "user-joined", "client_id": client_id, "role": role}, exclude=client_id)
+    return {"success": True}
+
+@app.get("/api/signaling/poll")
+async def sig_poll(room_id: str, client_id: str, t: str = None):
+    if room_id not in manager.rooms or client_id not in manager.rooms[room_id]:
+        return []
+    queue = manager.rooms[room_id][client_id]["queue"]
+    messages = []
+    try:
+        # نگه داشتن اتصال برای ۲۰ ثانیه (دور زدن فایروال)
+        msg = await asyncio.wait_for(queue.get(), timeout=20.0)
+        messages.append(msg)
+        while not queue.empty():
+            messages.append(queue.get_nowait())
+    except asyncio.TimeoutError:
+        messages.append({"type": "ping"})
+    return messages
+
+@app.post("/api/signaling/send")
+async def sig_send(request: Request):
+    data = await request.json()
+    room_id = data.get("room_id")
+    client_id = data.get("client_id")
+    message = data.get("message")
+    
+    if room_id not in manager.rooms or client_id not in manager.rooms[room_id]:
+        return {"success": False}
+        
+    role = manager.rooms[room_id][client_id]["role"]
+    mtype = message.get("type")
+    
+    if mtype in ['offer', 'answer', 'ice-candidate']:
+        await manager.send_personal(room_id, message['target'], message)
+    elif mtype in ['cam-state', 'stop-screen']:
+        await manager.broadcast(room_id, message, exclude=client_id)
+    elif mtype == 'chat':
+        chat_payload = {"type": "chat", "sender": client_id, "text": message['text'], "senderName": message.get('senderName', 'User'), "role": role}
+        manager.chat_history[room_id].append(chat_payload)
+        if len(manager.chat_history[room_id]) > 200: manager.chat_history[room_id].pop(0)
+        await manager.broadcast(room_id, chat_payload)
+    elif mtype == 'admin-action' and role == 'admin':
+        action = message.get('action')
+        if action == 'pause-meeting':
+            manager.meeting_status[room_id] = "paused"
+            await manager.broadcast(room_id, {"type": "meeting-paused"})
+        elif action == 'resume-meeting':
+            manager.meeting_status[room_id] = "active"
+            await manager.broadcast(room_id, {"type": "meeting-resumed"})
+        elif action == 'clear-chat':
+            manager.chat_history[room_id] = []
+            await manager.broadcast(room_id, {"type": "chat-cleared"})
+        elif action in ['mute-mic', 'mute-cam']:
+            await manager.send_personal(room_id, message['target_id'], {"type": "force-action", "action": action})
+    elif mtype == 'user-joined': # Triggered on unpause
+         await manager.broadcast(room_id, {"type": "user-joined", "client_id": client_id, "role": role}, exclude=client_id)
+            
+    return {"success": True}
+
+@app.post("/api/signaling/leave")
+async def sig_leave(request: Request):
+    data = await request.json()
+    room_id = data.get("room_id")
+    client_id = data.get("client_id")
+    manager.disconnect(room_id, client_id)
+    await manager.broadcast(room_id, {"type": "user-left", "client_id": client_id})
+    return {"success": True}
