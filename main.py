@@ -6,13 +6,13 @@ import os
 
 app = FastAPI()
 
-# سرو کردن فایل‌های استاتیک (فرانت‌اند)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# کلاس مدیریت اتصالات وب‌سوکت
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 class ConnectionManager:
     def __init__(self):
-        # ساختار: { websocket_object: {"client_id": str, "role": str} }
         self.active_connections = {}
 
     async def connect(self, websocket: WebSocket, client_id: str, role: str):
@@ -41,18 +41,17 @@ manager = ConnectionManager()
 
 @app.get("/")
 async def get_index():
-    return FileResponse('static/index.html')
+    return FileResponse(os.path.join(STATIC_DIR, 'index.html'))
 
-# API لاگین با استفاده از فایل users.txt
 @app.post("/api/login")
 async def login_api(request: Request):
     data = await request.json()
     username = data.get("username")
     password = data.get("password")
     
-    users_file = "users.txt"
+    users_file = os.path.join(BASE_DIR, "users.txt")
     if not os.path.exists(users_file):
-        return {"success": False, "message": "دیتابیس کاربران یافت نشد. لطفاً از طریق اسکریپت کاربر بسازید."}
+        return {"success": False, "message": "Database not found."}
 
     try:
         with open(users_file, "r") as f:
@@ -63,16 +62,13 @@ async def login_api(request: Request):
                     if u == username and p == password:
                         return {"success": True, "role": r}
     except Exception as e:
-        return {"success": False, "message": f"خطا در خواندن اطلاعات: {str(e)}"}
+        return {"success": False, "message": f"Error: {str(e)}"}
         
-    return {"success": False, "message": "نام کاربری یا رمز عبور اشتباه است."}
+    return {"success": False, "message": "Invalid Credentials."}
 
-# مدیریت سیگنالینگ WebRTC و پیام‌های چت/ادمین
 @app.websocket("/ws/{client_id}/{role}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
     await manager.connect(websocket, client_id, role)
-    
-    # به بقیه اطلاع بده که کاربر جدیدی وارد شده است
     await manager.broadcast(json.dumps({"type": "user-joined", "client_id": client_id, "role": role}), exclude=websocket)
 
     try:
@@ -80,13 +76,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
             data = await websocket.receive_text()
             message = json.loads(data)
             
-            # رله کردن سیگنال‌های WebRTC (Offer, Answer, ICE) به کاربر هدف
             if message['type'] in ['offer', 'answer', 'ice-candidate']:
                 target_ws = manager.get_client(message['target'])
                 if target_ws:
                     await target_ws.send_text(data)
             
-            # پیام‌های چت متنی
             elif message['type'] == 'chat':
                 await manager.broadcast(json.dumps({
                     "type": "chat",
@@ -95,7 +89,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str, role: str):
                     "role": role
                 }))
             
-            # دستورات ادمین
             elif message['type'] == 'admin-action':
                 if role == 'admin':
                     action = message['action']
