@@ -23,7 +23,8 @@ const SVGs = {
     micOff: '<svg viewBox="0 0 24 24"><path d="M19 11h-2c0 .91-.26 1.75-.69 2.48l1.46 1.46A6.921 6.921 0 0019 11zM14.93 14.93l-2.43-2.43c.03-.16.05-.33.05-.5V5c0-1.66-1.34-3-3-3S6.5 3.34 6.5 5v1.07l-2 2V5c0-2.76 2.24-5 5-5s5 2.24 5 5v7c0 .5-.1 1-.26 1.47l1.69 1.69c.56-.84.95-1.8.99-2.85h2c-.04 1.57-.49 3.01-1.23 4.21l1.45 1.45c.95-1.39 1.55-3.05 1.61-4.85zM12 14c-1.66 0-3-1.34-3-3V5.59L15.41 15C14.48 15.65 13.3 16 12 16c-2.76 0-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c1.66-.24 3.16-.99 4.31-2.04l-1.39-1.39C14.83 15.54 13.48 16 12 16v-2z"/></svg>',
     camOn: '<svg viewBox="0 0 24 24"><path d="M15 8v8H5V8h10m1-2H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4V7c0-.55-.45-1-1-1z"/></svg>',
     camOff: '<svg viewBox="0 0 24 24"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z"/></svg>',
-    endCall: '<svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.52-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>'
+    endCall: '<svg viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.52-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>',
+    startCall: '<svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>'
 };
 
 document.getElementById('btn-mic').innerHTML = SVGs.micOn;
@@ -33,9 +34,9 @@ document.addEventListener('click', (e) => {
     if (!e.target.matches('.three-dots-btn')) document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
 });
 
-// خروج از فول اسکرین با زدن کلید ESC
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+// مانیتورینگ خروج از فول‌اسکرین با دکمه ESC
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
         document.querySelectorAll('.video-container').forEach(c => c.classList.remove('fullscreen'));
         document.getElementById('local-container').classList.remove('pip');
     }
@@ -177,27 +178,28 @@ function togglePin(containerId) {
     if (!isPinned) container.classList.add('pinned');
 }
 
-// تابع فعال‌سازی فول اسکرین واقعی
+// تابع فول‌اسکرین واقعی HTML5
 function makeFullscreen(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    const localCont = document.getElementById('local-container');
-    document.querySelectorAll('.video-container').forEach(c => c.classList.remove('fullscreen'));
-    
-    container.classList.add('fullscreen');
-    if (container.id !== 'local-container' && !isVideoMuted) localCont.classList.add('pip');
-    else localCont.classList.remove('pip');
+
+    if (!document.fullscreenElement) {
+        // فول‌اسکرین کردن کل داکیومنت، و با CSS خود کپسول را می‌کشیم روی بقیه چیزها
+        document.documentElement.requestFullscreen().then(() => {
+            container.classList.add('fullscreen');
+            // اگر ویدیوی شخص دیگری بود، خودمان را گوشه صفحه نگه می‌داریم
+            if (container.id !== 'local-container' && !isVideoMuted) {
+                document.getElementById('local-container').classList.add('pip');
+            }
+        }).catch(err => console.log(err));
+    } else {
+        document.exitFullscreen();
+    }
 }
 
 function setupDoubleClickHandler(containerElement) {
     containerElement.ondblclick = () => {
-        const isFS = containerElement.classList.contains('fullscreen');
-        if (!isFS) makeFullscreen(containerElement.id);
-        else {
-            containerElement.classList.remove('fullscreen');
-            document.getElementById('local-container').classList.remove('pip');
-        }
+        makeFullscreen(containerElement.id);
     };
 }
 
@@ -266,17 +268,26 @@ function connectWebSocket() {
                 updateGridLayout();
                 break;
             case 'meeting-paused':
+                // حل قطعی باگ ادمین: بستن تمام مدیاها و مخفی کردن محیط کار
                 if (myRole !== 'admin') {
                     isMeetingActive = false;
                     document.getElementById('meeting-overlay').style.display = 'flex';
-                    if (!isAudioMuted) toggleAudio(true); 
-                    if (!isVideoMuted) toggleVideo(true); 
+                    document.getElementById('main-workspace').style.display = 'none';
+                    document.getElementById('view-tabs').style.display = 'none';
+                    document.querySelector('.bottom-bar').style.display = 'none';
+                    stopAllMediaAndConnections();
                 }
                 break;
             case 'meeting-resumed':
                 if (myRole !== 'admin') {
                     isMeetingActive = true;
                     document.getElementById('meeting-overlay').style.display = 'none';
+                    document.getElementById('main-workspace').style.display = 'flex';
+                    document.getElementById('view-tabs').style.display = 'flex';
+                    document.querySelector('.bottom-bar').style.display = 'flex';
+                    initMedia().then(() => {
+                        ws.send(JSON.stringify({ type: 'user-joined', client_id: clientId, role: myRole }));
+                    });
                 }
                 break;
             case 'force-action':
@@ -487,21 +498,26 @@ function toggleMeetingState() {
     }
 }
 
+// بستن کامل مدیا هنگام قطع توسط ادمین
+function stopAllMediaAndConnections() {
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (myScreenStream) stopScreenShare();
+    for (let id in peerConnections) peerConnections[id].close();
+    peerConnections = {};
+    document.querySelectorAll('.remote-video').forEach(e => e.remove());
+}
+
 async function toggleRecording() {
     const btn = document.getElementById('btn-record');
-    
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         btn.classList.remove('record-pulse');
         return;
     }
-
     try {
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         mediaRecorder = new MediaRecorder(stream);
-        
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        
         mediaRecorder.onstop = () => {
             stream.getTracks().forEach(t => t.stop());
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
@@ -522,11 +538,9 @@ async function toggleRecording() {
                     </div>
                 </div>
             `;
-            
             if(!document.getElementById('main-sidebar').classList.contains('show')) toggleSidebar();
             switchSidebarTab('admin');
         };
-        
         mediaRecorder.start();
         btn.classList.add('record-pulse');
     } catch (err) { console.error("Recording permission denied"); }
@@ -546,18 +560,15 @@ async function toggleScreenShare() {
     if (!isScreenSharing) {
         try {
             myScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-            
             Object.keys(peerConnections).forEach(pcKey => {
                 if (pcKey.endsWith('-camera')) {
                     const peerId = pcKey.split('-')[0];
                     createPeerConnection(peerId, 'screen', true, myScreenStream);
                 }
             });
-            
             addLocalScreenShare(myScreenStream);
             isScreenSharing = true;
             document.getElementById('btn-share').classList.add('active-orange');
-
             myScreenStream.getVideoTracks()[0].onended = stopScreenShare;
         } catch (error) {}
     } else {
@@ -568,9 +579,7 @@ async function toggleScreenShare() {
 function stopScreenShare() {
     if (!isScreenSharing) return;
     if (myScreenStream) myScreenStream.getTracks().forEach(t => t.stop());
-    
     ws.send(JSON.stringify({ type: 'stop-screen', senderId: clientId }));
-    
     Object.keys(peerConnections).forEach(pcKey => {
         if (pcKey.endsWith('-screen')) {
             peerConnections[pcKey].close();
@@ -578,10 +587,8 @@ function stopScreenShare() {
         }
     });
     myScreenStream = null;
-    
     const localScreenCont = document.getElementById('local-screen-container');
     if (localScreenCont) localScreenCont.remove();
-    
     isScreenSharing = false;
     document.getElementById('btn-share').classList.remove('active-orange');
     updateGridLayout();
