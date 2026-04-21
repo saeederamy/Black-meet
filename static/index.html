@@ -3,118 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Meet</title>
+    <title>Black Meet - Glossy</title>
     <style>
         :root {
-            --bg-color: #202124; /* رنگ پس‌زمینه دقیق گوگل میت */
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --border: #3c4043;
-            --text-color: #ffffff;
-            --btn-normal: #3c4043;
-            --btn-hover: #4a4d51;
-            --danger: #ea4335; /* قرمز گوگل */
-            --success: #1e8e3e; /* سبز گوگل */
-            --blue: #8ab4f8;
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            --text-light: #ffffff;
+            --btn-blue: #3b82f6;
+            --btn-red: #ef4444;
+            --btn-green: #10b981;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
 
-        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        body {
+            background-color: var(--bg-dark);
+            /* افکت نوری براق سفید/خاکستری در پس‌زمینه */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.04), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.04), transparent 25%);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-        .glass { background: var(--glass-bg); border: 1px solid var(--border); border-radius: 12px; }
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+        }
 
-        /* Login Screen */
-        #login-screen { width: 100%; max-width: 380px; padding: 40px; text-align: center; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        #login-screen h2 { font-size: 24px; color: var(--text-color); margin-bottom: 10px; }
-        input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 15px; outline: none; }
-        input:focus { border-color: var(--blue); }
-        .btn-primary { background: var(--blue); color: #000; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-primary:hover { opacity: 0.9; }
-
-        /* Meet Screen & Waiting Room */
-        #meet-screen { display: none; width: 100vw; height: 100vh; flex-direction: column; }
-        #waiting-room { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; font-size: 20px; color: #9aa0a6; }
+        /* --- Login Screen --- */
+        #login-wrapper {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+        }
+        #login-screen {
+            width: 100%; max-width: 400px; padding: 40px; text-align: center;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        #login-screen h2 { font-size: 26px; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
         
-        .workspace { display: flex; flex: 1; padding: 15px; gap: 15px; height: calc(100vh - 80px); }
+        input {
+            width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border); border-radius: 10px;
+            color: white; font-size: 16px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        
+        .btn-primary {
+            background: #fff; color: #000; border: none; padding: 15px;
+            border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn-primary:hover { background: #e2e2e2; box-shadow: 0 0 15px rgba(255,255,255,0.4); }
 
-        #video-grid { flex: 3; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; align-content: center; }
+        /* --- Meet Screen --- */
+        #meet-screen { display: none; flex-direction: column; height: 100vh; width: 100vw; }
         
-        .video-container { position: relative; background: #3c4043; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999; border-radius: 0; }
-        video { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        #waiting-room { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; font-size: 22px; color: #bbb; }
         
-        .label { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 4px; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-        .expand-hint { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0.8; }
+        /* محیط اصلی: جدا شده از نوار پایین */
+        .workspace { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; }
 
-        /* Sidebar Chat */
-        .sidebar { flex: 1; max-width: 320px; display: flex; flex-direction: column; background: #fff; color: #202124; border-radius: 8px; overflow: hidden; }
-        .chat-header { padding: 15px; font-weight: bold; background: #f1f3f4; border-bottom: 1px solid #dadce0; }
-        #chat-messages { flex: 1; overflow-y: auto; padding: 15px; font-size: 14px; }
-        .chat-msg { margin-bottom: 10px; line-height: 1.5; color: #3c4043; }
-        .chat-msg b { color: #000; }
-        .chat-input { display: flex; padding: 15px; border-top: 1px solid #dadce0; gap: 10px; background: #fff; }
-        .chat-input input { background: #f1f3f4; color: #000; border: none; border-radius: 20px; padding: 10px 15px; }
-        .chat-input button { background: none; border: none; color: var(--blue); font-weight: bold; cursor: pointer; }
+        #video-grid {
+            flex: 3; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px; align-content: center; overflow-y: auto; padding-right: 5px;
+        }
 
-        /* Bottom Bar (Google Meet Style) */
-        .bottom-bar { height: 80px; display: flex; align-items: center; justify-content: center; gap: 12px; background: var(--bg-color); }
-        .ctrl-btn { background: var(--btn-normal); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .ctrl-btn:hover { background: var(--btn-hover); }
-        .ctrl-btn.danger { background: var(--danger); }
-        .ctrl-btn.danger:hover { background: #d93025; }
-        .ctrl-btn.success { background: var(--success); }
+        .video-container {
+            position: relative; background: #000; border-radius: 12px;
+            overflow: hidden; aspect-ratio: 16 / 9;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .video-container.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000; border-radius: 0; }
+        video { width: 100%; height: 100%; object-fit: cover; }
         
-        .ctrl-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .label {
+            position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px); padding: 5px 12px; border-radius: 6px;
+            font-size: 13px; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* پنل چت در کنار */
+        .sidebar {
+            flex: 1; max-width: 320px; display: flex; flex-direction: column;
+            padding: 20px;
+        }
+        .chat-header { font-weight: bold; padding-bottom: 15px; border-bottom: 1px solid var(--glass-border); margin-bottom: 15px; text-align: center; letter-spacing: 1px;}
+        #chat-messages { flex: 1; overflow-y: auto; font-size: 14px; padding-right: 5px;}
+        .chat-msg { margin-bottom: 12px; line-height: 1.5; color: #ddd; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;}
+        .chat-msg b { color: #fff; display: block; margin-bottom: 4px; font-size: 12px;}
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #bdc1c6; border-radius: 10px; }
+        .chat-input { display: flex; gap: 10px; margin-top: 15px; }
+        .chat-input input { padding: 12px; border-radius: 8px; }
+        .chat-input button { background: #fff; color: #000; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer;}
+
+        /* --- Bottom Bar --- */
+        .bottom-bar {
+            height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            gap: 15px; background: rgba(5, 5, 5, 0.8);
+            border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px);
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; width: 55px; height: 55px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s;
+        }
+        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
+        .ctrl-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* رنگ‌های اکتیو دکمه‌ها */
+        .ctrl-btn.active-blue { background: var(--btn-blue); border-color: var(--btn-blue); }
+        .ctrl-btn.active-red { background: var(--btn-red); border-color: var(--btn-red); }
+        .ctrl-btn.active-green { background: var(--btn-green); border-color: var(--btn-green); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="glass">
-        <h2>Black Meet</h2>
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <button class="btn-primary" onclick="login()">Join Meeting</button>
+    <div id="login-wrapper">
+        <div id="login-screen" class="glass-panel">
+            <h2>Black Meet</h2>
+            <p style="color: #999; font-size: 14px; margin-bottom: 10px;">Secure Workspace</p>
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+            <input type="password" id="password" placeholder="Password">
+            <button class="btn-primary" onclick="login()">Connect</button>
+        </div>
     </div>
 
     <div id="meet-screen">
         <div id="waiting-room">
-            <svg style="width: 48px; fill: #9aa0a6; margin-bottom: 15px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-            <p>Meeting paused by Admin.</p>
-            <p style="font-size: 14px; margin-top: 5px;">Waiting for the host to resume...</p>
+            <svg style="width: 64px; fill: #fff; margin-bottom: 20px; opacity: 0.5;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            <p>Meeting Paused</p>
+            <p style="font-size: 15px; margin-top: 10px; color: #888;">Waiting for the host to resume...</p>
         </div>
 
         <div class="workspace" id="main-workspace">
             <div id="video-grid">
                 <div class="video-container" id="local-container">
-                    <div class="expand-hint">Double click to expand</div>
                     <video id="local-video" autoplay muted playsinline></video>
                     <div class="label">You (<span id="role-display"></span>)</div>
                 </div>
             </div>
 
-            <div class="sidebar">
-                <div class="chat-header">In-call messages</div>
+            <div class="sidebar glass-panel">
+                <div class="chat-header">Live Chat</div>
                 <div id="chat-messages"></div>
                 <div class="chat-input">
-                    <input type="text" id="chat-input" placeholder="Send a message...">
+                    <input type="text" id="chat-input" placeholder="Type a message...">
                     <button onclick="sendChat()">Send</button>
                 </div>
             </div>
         </div>
         
         <div class="bottom-bar">
-            <button class="ctrl-btn" id="btn-mic" onclick="toggleAudio()" title="Toggle Microphone"></button>
-            <button class="ctrl-btn" id="btn-cam" onclick="toggleVideo()" title="Toggle Camera"></button>
-            <button class="ctrl-btn" onclick="toggleScreenShare()" title="Present now">
+            <button class="ctrl-btn active-green" id="btn-mic" onclick="toggleAudio()" title="Microphone"></button>
+            <button class="ctrl-btn active-blue" id="btn-cam" onclick="toggleVideo()" title="Camera"></button>
+            <button class="ctrl-btn" onclick="toggleScreenShare()" title="Share Screen">
                 <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM5 15h3v3h8v-3h3l-7-7-7 7z"/></svg>
             </button>
             
-            <span id="admin-controls" style="display: none; margin-left: 10px;">
-                <button class="ctrl-btn danger" id="btn-meeting-state" onclick="toggleMeetingState()" title="End / Start Meeting" style="width: 56px; border-radius: 28px; padding: 0 15px;">
-                    </button>
+            <span id="admin-controls" style="display: none; border-left: 1px solid var(--glass-border); padding-left: 15px; margin-left: 5px;">
+                <button class="ctrl-btn active-red" id="btn-meeting-state" onclick="toggleMeetingState()" title="End Meeting" style="width: 80px; border-radius: 30px;">
+                </button>
             </span>
         </div>
     </div>
