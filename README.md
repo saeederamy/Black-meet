@@ -103,20 +103,6 @@ Once completed, simply type `black-meet` anywhere in your terminal to manage you
 
 ---
 
-## 💖 Support the Project
-
-If Black Meet has helped you communicate securely and efficiently, consider supporting its continuous development. 
-
-### 💰 Crypto Donations
-
-| Asset | Wallet Address |
-| :--- | :--- |
-| **Litecoin (LTC)** | `YOUR_LITECOIN_ADDRESS_HERE` |
-| **TON Network** | `YOUR_TON_WALLET_ADDRESS_HERE` |
-
-### 🌟 Other Ways to Help
-* **Give a Star:** Simply giving this repository a ⭐ **Star** means a lot and helps others find this project.
-* **Feedback:** Open an issue if you encounter bugs or have suggestions for improvements.
 
 <br>
 
