@@ -109,6 +109,7 @@ Once completed, simply type `black-meet` anywhere in your terminal to manage you
 <div align="center">
 <i>Built for high-performance, secure, and uncensorable communication.</i>
 </div>
+
 # 🌟 Black Meet - WebRTC Server Setup (Iran Edition) 🇮🇷
 
 This guide provides a robust, anti-filter **STUN/TURN server configuration (Coturn)** optimized for restricted networks (like Iranian ISPs and Mobile Networks). 
@@ -173,28 +174,16 @@ sudo nano /etc/turnserver.conf
 Copy and paste the following configuration. ⚠️ **Make sure to change the IP address and Domain to your own:**
 
 ```ini
-# --- 🌐 Port Configurations ---
-# Standard STUN/TURN port (Fastest, UDP/TCP)
 listening-port=3478
-# Secure TLS port for bypassing strict DPI (TCP)
-tls-listening-port=4433
-
-# --- 📡 Network IPs ---
 listening-ip=0.0.0.0
-# IMPORTANT: Replace with your actual server IP
-external-ip=<YOUR_SERVER_IP_HERE>
+external-ip=<ip-server>
 
-# --- 📜 SSL Certificates ---
-cert=/etc/turn_cert.crt
-pkey=/etc/turn_key.key
-
-# --- 🔐 Security & Authentication ---
+# Security and Authentication
 fingerprint
 lt-cred-mech
-# Define your own custom username and password
 user=<YOUR_USERNAME>:<YOUR_SECURE_PASSWORD>
-# Set this to your main domain name
-realm=<your-domain.com>
+#without subdomain
+realm=<domian.ir>
 ```
 💾 *Save and exit the file (`Ctrl+O`, `Enter`, `Ctrl+X`).*
 
